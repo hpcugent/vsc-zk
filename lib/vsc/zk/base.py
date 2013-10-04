@@ -17,12 +17,14 @@
 vsc-zk base
 
 @author: Stijn De Weirdt (Ghent University)
+@author: Kenneth Waegeman (Ghent University)
 """
 
 import os
 import socket
 
 import kazoo.client
+import kazoo.security
 from vsc.utils import fancylogger
 
 
@@ -31,12 +33,12 @@ class KazooClient(kazoo.client.KazooClient):
     BASE_ZNODE = ['/admin']
     BASE_PARTIES = None
 
-    def __init__(self, hosts, name=None):
+    def __init__(self, hosts, name=None, default_acl=None, auth_data=None):
         self.log = fancylogger.getLogger(self.__class__.__name__, fname=False)
         self.parties = {}
         self.whoami = self.get_whoami(name)
 
-        super(KazooClient, self).__init__(hosts=','.join(hosts))
+        super(KazooClient, self).__init__(hosts=','.join(hosts), default_acl=default_acl, auth_data=auth_data)
         self.start()
 
         if self.BASE_PARTIES:
@@ -80,6 +82,17 @@ class KazooClient(kazoo.client.KazooClient):
         self.log.debug("znode %s" % znode)
         return znode
 
-    def make_znode(self, znode=None):
+    def make_znode(self, znode=None,value="",acl=None,makepath=False ):
         """Make a znode"""
         znode_path = self.znode_path(znode)
+        try:
+	    znode = self.create(znode_path, value,acl=acl, makepath=makepath)
+        except NodeExistsError:
+	    self.log.raiseException('znode %s already exists' % znode_path)
+	except NoNodeError:  
+	    self.log.raiseException('parent node(s) of znode %s missing' % znode_path)
+
+        self.log.debug("znode %s created in zookeeper" % znode)
+        return znode
+        
+        
