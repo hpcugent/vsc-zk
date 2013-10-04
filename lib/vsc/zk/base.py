@@ -23,14 +23,15 @@ vsc-zk base
 import os
 import socket
 
-import kazoo.client
-import kazoo.security
+from kazoo.client import KazooClient
+from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
+from kazoo.exceptions import NodeExistsError, NoNodeError
 
 
-class KazooClient(kazoo.client.KazooClient):
+class VscKazooClient(KazooClient):
 
-    BASE_ZNODE = ['/admin']
+    BASE_ZNODE = '/admin'
     BASE_PARTIES = None
 
     def __init__(self, hosts, name=None, default_acl=None, auth_data=None):
@@ -38,9 +39,9 @@ class KazooClient(kazoo.client.KazooClient):
         self.parties = {}
         self.whoami = self.get_whoami(name)
 
-        super(KazooClient, self).__init__(hosts=','.join(hosts), default_acl=default_acl, auth_data=auth_data)
+        super(VscKazooClient, self).__init__(hosts=','.join(hosts), default_acl=default_acl, auth_data=auth_data)
         self.start()
-
+        self.log.debug('started')
         if self.BASE_PARTIES:
             self.join_parties(self.BASE_PARTIES)
 
@@ -50,7 +51,7 @@ class KazooClient(kazoo.client.KazooClient):
         if name:
             data.append(name)
 
-        res = '-'.join(data)
+        res = '-'.join(str(x) for x in data)
         self.log.debug("get_whoami: %s" % res)
         return res
 
@@ -67,24 +68,27 @@ class KazooClient(kazoo.client.KazooClient):
 
     def znode_path(self, znode=None):
         """Create znode path and make sure is subtree of BASE_ZNODE"""
-        base_znode_string = os.path.join(*self.BASE_ZNODE)
+        base_znode_string = os.path.join(self.BASE_ZNODE)
         if znode is None:
             znode = base_znode_string
         elif isinstance(znode, (tuple, list)):
-            znode = os.path.join(*znode)
-
+            znode = os.path.join(znode)
+        
         if isinstance(znode, basestring):
             if not znode.startswith(base_znode_string):
-                znode = os.path.join(*self.BASE_ZNODE, znode)
+	        if not znode.startswith('/'):
+                  znode = os.path.join(self.BASE_ZNODE, znode)
+                else:
+		  self.log.raiseException('absolute path not valid: %s ' % znode)
         else:
             self.log.raiseException('Unsupported znode type %s (znode %s)' % (znode, type(znode)))
 
-        self.log.debug("znode %s" % znode)
         return znode
 
     def make_znode(self, znode=None,value="",acl=None,makepath=False ):
         """Make a znode"""
         znode_path = self.znode_path(znode)
+        self.log.debug("znode path is: %s" % znode_path)
         try:
 	    znode = self.create(znode_path, value,acl=acl, makepath=makepath)
         except NodeExistsError:
@@ -95,4 +99,8 @@ class KazooClient(kazoo.client.KazooClient):
         self.log.debug("znode %s created in zookeeper" % znode)
         return znode
         
-        
+    def exists_znode(self, znode=None):
+        """Checks if znode exists"""
+        znode_path = self.znode_path(znode)
+        return self.exists(znode_path)
+       
