@@ -4,12 +4,11 @@ import kazoo.security
 from vsc.utils import fancylogger
 from kazoo.security import KazooClient
 
-def
 
 def main():
     """
     main method
-    Makes tree of znodes with ACLs on
+    Sets ACLs on root node
     """
     logger = fancylogger.getLogger()
     

@@ -33,6 +33,7 @@ def main():
     
     # create a tree root node, with authentication
     zk.make_znode(value="tree top")
+    
     # create some child nodes
 #    for path in pathlist:
 #      zk.make_znode(path)
