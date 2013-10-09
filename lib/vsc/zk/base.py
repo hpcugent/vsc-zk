@@ -24,10 +24,9 @@ import os
 import socket
 
 from kazoo.client import KazooClient
+from kazoo.exceptions import NodeExistsError, NoNodeError, NoAuthError
 from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
-from kazoo.exceptions import NodeExistsError, NoNodeError, NoAuthError
-
 
 class VscKazooClient(KazooClient):
 
@@ -39,7 +38,7 @@ class VscKazooClient(KazooClient):
         self.parties = {}
         self.whoami = self.get_whoami(name)
 
-        kwargs={
+        kwargs = {
         'hosts'       : ','.join(hosts),
         'default_acl' : default_acl,
         'auth_data'   : auth_data,
@@ -91,12 +90,12 @@ class VscKazooClient(KazooClient):
         self.log.debug("znode %s" % znode)
         return znode
 
-    def make_znode(self, znode=None,value="",acl=None, **kwargs ):
+    def make_znode(self, znode=None, value="", acl=None, **kwargs ):
         """Make a znode, raise exception if exists"""
         znode_path = self.znode_path(znode)
         self.log.debug("znode path is: %s" % znode_path)
         try:
-            znode = self.create(znode_path,value=value,acl=acl,**kwargs)
+            znode = self.create(znode_path, value=value, acl=acl, **kwargs)
         except NodeExistsError:
             self.log.raiseException('znode %s already exists' % znode_path)
         except NoNodeError:  
@@ -110,7 +109,7 @@ class VscKazooClient(KazooClient):
         znode_path = self.znode_path(znode)
         return self.exists(znode_path)
         
-    def znode_acls(self,znode=None,acl=None):
+    def znode_acls(self, znode=None, acl=None):
         """set the acl on a znode"""
         znode_path = self.znode_path(znode)
         try:
