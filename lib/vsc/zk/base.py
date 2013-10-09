@@ -26,7 +26,7 @@ import socket
 from kazoo.client import KazooClient
 from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
-from kazoo.exceptions import NodeExistsError, NoNodeError
+from kazoo.exceptions import NodeExistsError, NoNodeError, NoAuthError
 
 
 class VscKazooClient(KazooClient):
@@ -39,7 +39,13 @@ class VscKazooClient(KazooClient):
         self.parties = {}
         self.whoami = self.get_whoami(name)
 
-        super(VscKazooClient, self).__init__(hosts=','.join(hosts), default_acl=default_acl, auth_data=auth_data)
+        kwargs={
+	    'hosts'       : ','.join(hosts),
+	    'default_acl' : default_acl,
+	    'auth_data'   : auth_data,
+	    'logger'      : self.log
+	  }
+        super(VscKazooClient, self).__init__(**kwargs)
         self.start()
         self.log.debug('started')
         if self.BASE_PARTIES:
@@ -85,12 +91,12 @@ class VscKazooClient(KazooClient):
 
         return znode
 
-    def make_znode(self, znode=None,value="",acl=None,makepath=False ):
-        """Make a znode"""
+    def make_znode(self, znode=None,value="",acl=None, **kwargs ):
+        """Make a znode, raise exception if exists"""
         znode_path = self.znode_path(znode)
         self.log.debug("znode path is: %s" % znode_path)
         try:
-	    znode = self.create(znode_path, value,acl=acl, makepath=makepath)
+	    znode = self.create(znode_path,value=value,acl=acl,**kwargs)
         except NodeExistsError:
 	    self.log.raiseException('znode %s already exists' % znode_path)
 	except NoNodeError:  
@@ -103,4 +109,16 @@ class VscKazooClient(KazooClient):
         """Checks if znode exists"""
         znode_path = self.znode_path(znode)
         return self.exists(znode_path)
+        
+    def znode_acls(self,znode=None,acl=None):
+	"""set the acl on a znode"""
+	znode_path = self.znode_path(znode)
+        try:
+	    self.set_acls(znode_path, acl)
+        except NoAuthError:
+	    self.log.raiseException('No valid authentication!')
+	except NoNodeError:  
+	    self.log.raiseException('node %s doesn\'t exists' % znode_path)
+        
+        self.log.debug("added ACL for znode %s in zookeeper" % znode_path)
        
