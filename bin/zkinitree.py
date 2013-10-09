@@ -6,14 +6,10 @@ from vsc.utils import fancylogger
 from vsc.zk.base import VscKazooClient
 
 options={
- #   'optie1':('eerste optie', <type>, 'store', <default>, 'O'),
      'servers':('list of zk servers', 'strlist','store',None)  
 }
 go=simple_option(options)
 logger = fancylogger.getLogger()
-
-#print go.options
-#print go.configfile_remainder
 
 rootinfo=go.configfile_remainder.pop('root',{})
 if 'passwd' not in rootinfo: logger.error('Root user not configured or has no password attribute!')

@@ -88,7 +88,7 @@ class VscKazooClient(KazooClient):
                     self.log.raiseException('path %s not subpath of %s ' % (znode, base_znode_string))
         else:
             self.log.raiseException('Unsupported znode type %s (znode %s)' % (znode, type(znode)))
-        
+        self.log.debug("znode %s" % znode)
         return znode
 
     def make_znode(self, znode=None,value="",acl=None, **kwargs ):
@@ -121,4 +121,3 @@ class VscKazooClient(KazooClient):
             self.log.raiseException('node %s doesn\'t exists' % znode_path)
         
         self.log.debug("added ACL for znode %s in zookeeper" % znode_path)
-       
