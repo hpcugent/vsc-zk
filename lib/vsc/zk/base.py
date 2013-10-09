@@ -40,11 +40,11 @@ class VscKazooClient(KazooClient):
         self.whoami = self.get_whoami(name)
 
         kwargs={
-	    'hosts'       : ','.join(hosts),
-	    'default_acl' : default_acl,
-	    'auth_data'   : auth_data,
-	    'logger'      : self.log
-	  }
+        'hosts'       : ','.join(hosts),
+        'default_acl' : default_acl,
+        'auth_data'   : auth_data,
+        'logger'      : self.log
+        }
         super(VscKazooClient, self).__init__(**kwargs)
         self.start()
         self.log.debug('started')
@@ -82,13 +82,13 @@ class VscKazooClient(KazooClient):
         
         if isinstance(znode, basestring):
             if not znode.startswith(base_znode_string):
-	        if not znode.startswith('/'):
-                  znode = os.path.join(self.BASE_ZNODE, znode)
+                if not znode.startswith('/'):
+                    znode = os.path.join(self.BASE_ZNODE, znode)
                 else:
-		  self.log.raiseException('absolute path not valid: %s ' % znode)
+                    self.log.raiseException('path %s not subpath of %s ' % (znode, base_znode_string))
         else:
             self.log.raiseException('Unsupported znode type %s (znode %s)' % (znode, type(znode)))
-
+        
         return znode
 
     def make_znode(self, znode=None,value="",acl=None, **kwargs ):
@@ -96,12 +96,12 @@ class VscKazooClient(KazooClient):
         znode_path = self.znode_path(znode)
         self.log.debug("znode path is: %s" % znode_path)
         try:
-	    znode = self.create(znode_path,value=value,acl=acl,**kwargs)
+            znode = self.create(znode_path,value=value,acl=acl,**kwargs)
         except NodeExistsError:
-	    self.log.raiseException('znode %s already exists' % znode_path)
-	except NoNodeError:  
-	    self.log.raiseException('parent node(s) of znode %s missing' % znode_path)
-
+            self.log.raiseException('znode %s already exists' % znode_path)
+        except NoNodeError:  
+            self.log.raiseException('parent node(s) of znode %s missing' % znode_path)
+        
         self.log.debug("znode %s created in zookeeper" % znode)
         return znode
         
@@ -111,14 +111,14 @@ class VscKazooClient(KazooClient):
         return self.exists(znode_path)
         
     def znode_acls(self,znode=None,acl=None):
-	"""set the acl on a znode"""
-	znode_path = self.znode_path(znode)
+        """set the acl on a znode"""
+        znode_path = self.znode_path(znode)
         try:
-	    self.set_acls(znode_path, acl)
+            self.set_acls(znode_path, acl)
         except NoAuthError:
-	    self.log.raiseException('No valid authentication!')
-	except NoNodeError:  
-	    self.log.raiseException('node %s doesn\'t exists' % znode_path)
+            self.log.raiseException('No valid authentication!')
+        except NoNodeError:  
+            self.log.raiseException('node %s doesn\'t exists' % znode_path)
         
         self.log.debug("added ACL for znode %s in zookeeper" % znode_path)
        

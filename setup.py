@@ -42,8 +42,7 @@ PACKAGE = {
     'namespace_packages': ['vsc'],
     'scripts': [
                 'bin/zkrsync.py',
-                'bin/zkroot.py',
-                'bin/zktree.py',
+                'bin/zkinitree.py',
                 ],
     'install_requires': [
         'vsc-base >= 1.2',
