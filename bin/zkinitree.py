@@ -24,32 +24,32 @@ from vsc.utils import fancylogger
 from vsc.utils.generaloption import simple_option
 from vsc.zk.base import VscKazooClient
 
-def get_rootinfo(go):
+def get_rootinfo(configremainder):
     """get rootpasswd and rootpath"""
-    rootinfo = go.configfile_remainder.pop('root', {})
+    rootinfo = configremainder.pop('root', {})
     if 'passwd' not in rootinfo:
         logger.error('Root user not configured or has no password attribute!')
     rpasswd = rootinfo['passwd']
     rpath = rootinfo.get('path', '/')
     return rpasswd,rpath
     
-def parse_zkconfig(go):
+def parse_zkconfig(configremainder):
     """get znodes and users dict"""
     znodes = {}
     users = {}
 
     # Parsing config sections
-    for sect in go.configfile_remainder:
+    for sect in configremainder:
         if sect.startswith('/'):
             # Parsing paths
             znode = znodes.setdefault(sect, {})
-            for k,v in go.configfile_remainder[sect].iteritems():
+            for k,v in configremainder[sect].iteritems():
                 if v: # don't parse empty parameters
                     znode[k] = v.split(',')
         else:
             # Parsing users  
             user = users.setdefault(sect, {})
-            for k,v in go.configfile_remainder[sect].iteritems():
+            for k,v in configremainder[sect].iteritems():
                 user[k] = v.split(',')
             if 'passwd' not in user:
                 logger.error('User %s has no password attribute!' % sect)
@@ -84,9 +84,8 @@ def main():
     }
     go = simple_option(options)
 
-
-    rpasswd, rpath = get_rootinfo(go)
-    znodes, users = parse_zkconfig(go)
+    rpasswd, rpath = get_rootinfo(go.configfile_remainder)    
+    znodes, users = parse_zkconfig(go.configfile_remainder)
 
     logger.debug("znodes: %s" % znodes)
     logger.debug("users: %s" % users)
