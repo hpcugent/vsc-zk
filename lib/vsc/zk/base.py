@@ -24,8 +24,8 @@ import os
 import socket
 
 from kazoo.client import KazooClient
+from kazoo.recipe.party import Party
 from kazoo.exceptions import NodeExistsError, NoNodeError, NoAuthError
-from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
 
 class VscKazooClient(KazooClient):
@@ -33,11 +33,16 @@ class VscKazooClient(KazooClient):
     BASE_ZNODE = '/admin'
     BASE_PARTIES = None
 
-    def __init__(self, hosts, name=None, default_acl=None, auth_data=None):
+    def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None):
         self.log = fancylogger.getLogger(self.__class__.__name__, fname=False)
         self.parties = {}
         self.whoami = self.get_whoami(name)
-
+        
+        if session:
+            self.session = session
+        else:
+            self.session = 'default'
+            
         kwargs = {
         'hosts'       : ','.join(hosts),
         'default_acl' : default_acl,
@@ -47,6 +52,7 @@ class VscKazooClient(KazooClient):
         super(VscKazooClient, self).__init__(**kwargs)
         self.start()
         self.log.debug('started')
+        
         if self.BASE_PARTIES:
             self.join_parties(self.BASE_PARTIES)
 
@@ -67,9 +73,12 @@ class VscKazooClient(KazooClient):
             parties = []
         else:
             self.log.debug("Joining %s parties: %s", len(parties), ", ".join(parties))
-
-        for party in parties:
-            self.partiesx
+            for party in parties:
+                
+                partypath = self.BASE_ZNODE + self.session + '/parties/' + party
+                thisparty = Party(self, partypath,self.whoami)
+                thisparty.join()
+                self.parties[party] = thisparty
 
     def znode_path(self, znode=None):
         """Create znode path and make sure is subtree of BASE_ZNODE"""
@@ -120,3 +129,9 @@ class VscKazooClient(KazooClient):
             self.log.raiseException('node %s doesn\'t exists' % znode_path)
         
         self.log.debug("added ACL for znode %s in zookeeper" % znode_path)
+        
+    def exit(self):
+        """stop and close the connection"""
+        self.stop()
+        self.close()
+        

@@ -58,6 +58,8 @@ def main():
         else:
             logger.warning('node %s already exists' % path)
             zkclient.znode_acls(path, acl_list)
+            
+    zkclient.exit()
 
 if __name__ == '__main__':
     logger = fancylogger.getLogger()
