@@ -82,7 +82,7 @@ class VscKazooClient(KazooClient):
 
     def znode_path(self, znode=None):
         """Create znode path and make sure is subtree of BASE_ZNODE"""
-        base_znode_string = os.path.join(self.BASE_ZNODE)
+        base_znode_string = self.BASE_ZNODE
         if znode is None:
             znode = base_znode_string
         elif isinstance(znode, (tuple, list)):
