@@ -43,10 +43,10 @@ def main():
     go = simple_option(options)
     print go.options
     # Parsing options
-    if go.options.servers == None:
+    if not go.options.servers:
         logger.error("No servers given!")
         exit(1)
-    if go.options.path == None:
+    if not go.options.path:
         logger.error("Path is mandatory!")
         exit(1)
     depth = go.options.depth
@@ -73,7 +73,7 @@ def main():
         # Add myself to dest_Q
         watchpath = rsyncD.znode_path(session + '/watch')
         @rsyncD.DataWatch(watchpath)
-        def my_func(data, stat):
+        def ready_watcher(data, stat):
             logger.debug("Watch status is %s" % data)
             if data == 'end':
                 logger.debug('End node received, exit')
@@ -131,7 +131,7 @@ def main():
             exit()
         else:
             @rsyncS.DataWatch(watchpath)
-            def my_func(data, stat):
+            def ready_watcher(data, stat):
                 logger.debug("Watch status is %s" % data)
                 if data == 'end':
                     logger.debug('End node received, exit')

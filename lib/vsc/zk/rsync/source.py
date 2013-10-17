@@ -35,12 +35,11 @@ class RsyncSource(VscKazooClient):
         
         self.ready= False
         kwargs = {
-        'hosts'       : hosts,
-        'session'     : session,
-        'name'        : name,
-        'default_acl' : default_acl,
-        'auth_data'   : auth_data,
-
+            'hosts'       : hosts,
+            'session'     : session,
+            'name'        : name,
+            'default_acl' : default_acl,
+            'auth_data'   : auth_data,
         }
         super(RsyncSource, self).__init__(**kwargs)
         

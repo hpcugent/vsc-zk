@@ -36,11 +36,11 @@ class RsyncDestination(VscKazooClient):
         #self.log = fancylogger.getLogger(self.__class__.__name__, fname=False)
         self.ready= False
         kwargs = {
-        'hosts'       : hosts,
-        'session'     : session,
-        'name'        : name,
-        'default_acl' : default_acl,
-        'auth_data'   : auth_data,
+            'hosts'       : hosts,
+            'session'     : session,
+            'name'        : name,
+            'default_acl' : default_acl,
+            'auth_data'   : auth_data,
         }
         super(RsyncDestination, self).__init__(**kwargs)
         

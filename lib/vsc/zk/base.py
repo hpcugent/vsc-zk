@@ -37,17 +37,17 @@ class VscKazooClient(KazooClient):
         self.log = fancylogger.getLogger(self.__class__.__name__, fname=False)
         self.parties = {}
         self.whoami = self.get_whoami(name)
-        
+                
         if session:
             self.session = session
         else:
-            self.session = 'default'
-            
+            self.session = 'default'            
+        
         kwargs = {
-        'hosts'       : ','.join(hosts),
-        'default_acl' : default_acl,
-        'auth_data'   : auth_data,
-        #'logger'      : self.log
+            'hosts'       : ','.join(hosts),
+            'default_acl' : default_acl,
+            'auth_data'   : auth_data,
+            'logger'      : self.log
         }
         super(VscKazooClient, self).__init__(**kwargs)
         self.start()
@@ -100,7 +100,7 @@ class VscKazooClient(KazooClient):
         return znode
 
     def make_znode(self, znode=None, value="", acl=None, **kwargs ):
-        """Make a znode, raise exception if exists"""
+        """Make a znode, raise NodeExistsError if exists"""
         znode_path = self.znode_path(znode)
         self.log.debug("znode path is: %s" % znode_path)
         try:
