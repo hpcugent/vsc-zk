@@ -79,7 +79,6 @@ def main():
                 logger.debug('End node received, exit')
                 rsyncD.set_ready()        
         dest_Q = LockingQueue(rsyncD, rsyncD.znode_path(session + '/destQ'))
-        #rsyncD.daemon_info naar string
         dest_Q.put(rsyncD.daemon_info())
         
         while not rsyncD.is_ready():
@@ -92,7 +91,7 @@ def main():
         
     elif go.options.source:
         # Start zookeeper connections
-        rsyncS = RsyncSource(go.options.servers,**kwargs)
+        rsyncS = RsyncSource(go.options.servers, **kwargs)
         # Try to retrieve session lock
         lockpath = rsyncS.znode_path(session + '/lock')
         watchpath = rsyncS.znode_path(session + '/watch')
@@ -110,7 +109,7 @@ def main():
                 exit(1)
             rsyncS.make_znode(watchpath, 'start')
 
-            logger.debug('building tree, waiting till empty')
+            logger.debug('building tree, then waiting till empty')
             time.sleep(20)
             
             # Build path_Q
@@ -148,15 +147,14 @@ def main():
             logger.debug(params[0])
             logger.debug('ready to do some rsyncing')    
             while not rsyncS.is_ready():
-                # get op Q met timeout
-                # check isready again
+                # get on Q with timeout
+                # check element , ok or continue with next iteration
                 logger.debug('rsyncing')
                 time.sleep(12)
                 
             logger.debug('%s Ready' % rsyncS.get_whoami())
             rsyncS.exit()    
              
-    
 if __name__ == '__main__':
     logger = fancylogger.getLogger()
     main()
