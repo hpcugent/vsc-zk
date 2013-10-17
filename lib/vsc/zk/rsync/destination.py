@@ -34,7 +34,7 @@ class RsyncDestination(VscKazooClient):
     
     def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None):
         #self.log = fancylogger.getLogger(self.__class__.__name__, fname=False)
-        
+        self.ready= False
         kwargs = {
         'hosts'       : hosts,
         'session'     : session,
@@ -58,7 +58,13 @@ class RsyncDestination(VscKazooClient):
         hosts = []
         for host in self.parties['allsd']:
             hosts.append(host)
-        return hosts        
+        return hosts
+            
+    def set_ready(self):
+        self.ready = True
     
+    def is_ready(self):
+        return self.ready
+
     def daemon_info(self):
-        return (self.daemon_host, self.daemon_port)
+        return str(self.daemon_host) + ':' + str(self.daemon_port)

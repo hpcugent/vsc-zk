@@ -47,7 +47,7 @@ class VscKazooClient(KazooClient):
         'hosts'       : ','.join(hosts),
         'default_acl' : default_acl,
         'auth_data'   : auth_data,
-        'logger'      : self.log
+        #'logger'      : self.log
         }
         super(VscKazooClient, self).__init__(**kwargs)
         self.start()
@@ -75,7 +75,7 @@ class VscKazooClient(KazooClient):
             self.log.debug("Joining %s parties: %s", len(parties), ", ".join(parties))
             for party in parties:
                 
-                partypath = self.BASE_ZNODE + self.session + '/parties/' + party
+                partypath = self.BASE_ZNODE + '/' + self.session + '/parties/' + party
                 thisparty = Party(self, partypath,self.whoami)
                 thisparty.join()
                 self.parties[party] = thisparty
