@@ -14,20 +14,22 @@
 #
 #
 """
-zk.rsync source
+zk.rsync controller
 
 @author: Stijn De Weirdt (Ghent University)
 @author: Kenneth Waegeman (Ghent University)
 """
 
-from vsc.zk.rsync.controller import RsyncController
+from vsc.zk.base import VscKazooClient
 
-class RsyncSource(RsyncController):
+class RsyncController(VscKazooClient):
 
-    BASE_PARTIES = RsyncController.BASE_PARTIES + ['sources']
+    BASE_ZNODE = '/admin/rsync'
+    BASE_PARTIES = ['allsd']
     
     def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None):
         
+        self.ready= False
         kwargs = {
             'hosts'       : hosts,
             'session'     : session,
@@ -35,10 +37,16 @@ class RsyncSource(RsyncController):
             'default_acl' : default_acl,
             'auth_data'   : auth_data,
         }
-        super(RsyncSource, self).__init__(**kwargs)
+        super(RsyncController, self).__init__(**kwargs)
         
-    def get_sources(self):
+    def get_all_hosts(self):
         hosts = []
-        for host in self.parties['sources']:
+        for host in self.parties['allsd']:
             hosts.append(host)
-        return hosts
+        return hosts        
+   
+    def set_ready(self):
+        self.ready = True
+    
+    def is_ready(self):
+        return self.ready

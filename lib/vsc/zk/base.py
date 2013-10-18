@@ -47,7 +47,7 @@ class VscKazooClient(KazooClient):
             'hosts'       : ','.join(hosts),
             'default_acl' : default_acl,
             'auth_data'   : auth_data,
-            'logger'      : self.log
+          #  'logger'      : self.log
         }
         super(VscKazooClient, self).__init__(**kwargs)
         self.start()

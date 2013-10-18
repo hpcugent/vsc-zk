@@ -22,19 +22,14 @@ zk.rsync server
 
 import socket
 
-from vsc.zk.base import VscKazooClient
-from kazoo.recipe.party import Party
-from kazoo.exceptions import NodeExistsError, NoNodeError, NoAuthError
-from vsc.utils import fancylogger
+from vsc.zk.rsync.controller import RsyncController
 
-class RsyncDestination(VscKazooClient):
+class RsyncDestination(RsyncController):
 
-    BASE_ZNODE = '/admin/rsync'
-    BASE_PARTIES = ['dests', 'allsd']
+    BASE_PARTIES = RsyncController.BASE_PARTIES + ['dests']
     
-    def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None):
-        #self.log = fancylogger.getLogger(self.__class__.__name__, fname=False)
-        self.ready= False
+    def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None, rsyncport=873):
+
         kwargs = {
             'hosts'       : hosts,
             'session'     : session,
@@ -46,7 +41,7 @@ class RsyncDestination(VscKazooClient):
         
         # Start Rsync Daemon on free port
         self.daemon_host = socket.gethostname()
-        self.daemon_port = 873 # Default
+        self.daemon_port = rsyncport  # Default
         
     def get_destss(self):
         hosts = []
@@ -54,17 +49,5 @@ class RsyncDestination(VscKazooClient):
             hosts.append(host)
         return hosts
     
-    def get_all_hosts(self):
-        hosts = []
-        for host in self.parties['allsd']:
-            hosts.append(host)
-        return hosts
-            
-    def set_ready(self):
-        self.ready = True
-    
-    def is_ready(self):
-        return self.ready
-
     def daemon_info(self):
         return str(self.daemon_host) + ':' + str(self.daemon_port)

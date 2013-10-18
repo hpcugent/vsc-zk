@@ -24,7 +24,11 @@ from vsc.utils import fancylogger
 logger = fancylogger.getLogger()
 
 def get_rootinfo(configremainder):
-    """get rootpasswd and rootpath"""
+    """
+    takes a hierarchical dictionary of config sections 
+    (see configfile_remainder attribute of simple_option)
+    and returns rootpasswd and rootpath
+    """
     rootinfo = configremainder.pop('root', {})
     if 'passwd' not in rootinfo:
         logger.error('Root user not configured or has no password attribute!')
@@ -33,7 +37,11 @@ def get_rootinfo(configremainder):
     return rpasswd,rpath
     
 def parse_zkconfig(configremainder):
-    """get znodes and users dict"""
+    """
+    takes a hierarchical dictionary of config sections 
+    (see configfile_remainder attribute of simple_option)
+    and returns a znodes and users dict
+    """
     znodes = {}
     users = {}
 
@@ -56,7 +64,7 @@ def parse_zkconfig(configremainder):
     return znodes, users    
 
 def parse_acls(acls, users, root_acl):
-    """make list of ACLs out of dict"""
+    """takes a dictionary of acls : users and returns list of ACLs"""
     acl_list = [root_acl]
     for acl, acl_users in acls.iteritems():
         if acl == 'all': 
