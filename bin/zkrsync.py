@@ -29,10 +29,39 @@ from vsc.utils.generaloption import simple_option
 from vsc.zk.parser import get_rootinfo, parse_zkconfig, parse_acls
 from vsc.zk.rsync.source import RsyncSource
 from vsc.zk.rsync.destination import RsyncDestination
-        
+
+SLEEP_TIME = 15
+TIME_OUT = 15
+
+def zkrsync_parse(options):
+    """Takes options of simple_option and returns all the parameters after checks"""
+    if not options.servers:
+        logger.error("No servers given!")
+        exit(1)
+    if not options.path:
+        logger.error("Path is mandatory!")
+        exit(1)
+    if options.depth <= 0:
+        logger.error("Invalid depth!")
+        exit(1)
+
+    rootcreds = [('digest', options.credentials)]
+    user, passw = tuple(options.credentials.split(':'))
+    admin_acl = make_digest_acl(user, passw, all=True)
+
+    if options.source and options.destination:
+        logger.error("I can not be the source AND the destination")
+        exit(1)
+    if options.source:
+        type = "source"
+    elif options.destination:
+        type = "destination"
+
+    return options.servers, options.path, options.depth, options.session, rootcreds, admin_acl, type
+
 def main():
     options = {
-        'servers'     : ('list of zk servers', 'strlist', 'store', None), 
+        'servers'     : ('list of zk servers', 'strlist', 'store', None),
         'source'      : ('rsync source', None, 'store_true', False, 'S'),
         'destination' : ('rsync destination', None, 'store_true', False, 'D'),
         'path'        : ('rsync basepath', None, 'store', None, 'p'),
@@ -43,33 +72,18 @@ def main():
     go = simple_option(options)
     print go.options
     # Parsing options
-    if not go.options.servers:
-        logger.error("No servers given!")
-        exit(1)
-    if not go.options.path:
-        logger.error("Path is mandatory!")
-        exit(1)
-    depth = go.options.depth
-    rsyncpath = go.options.path
-    session = go.options.session
-    
-    acreds = [('digest', go.options.credentials)] 
-    user, passw = tuple(go.options.credentials.split(':'))
-    admin_acl = make_digest_acl(user, passw, all=True)
-    
-    if go.options.source and go.options.destination:
-        logger.error("I can not be the source AND the destination")
-        exit(1)
-    
+
+    servers, rsyncpath, depth, session, acreds, admin_acl, type = zkrsync_parse(go.options)
+
     kwargs = {
         'session'     : session,
         'default_acl' : [admin_acl],
         'auth_data'   : acreds,
         }
-    
-    if go.options.destination:
+
+    if type == "destination":
         # Start zookeeper connection and rsync daemon
-        rsyncD = RsyncDestination(go.options.servers, **kwargs)
+        rsyncD = RsyncDestination(servers, **kwargs)
         # Add myself to dest_Q
         watchpath = rsyncD.znode_path(session + '/watch')
         @rsyncD.DataWatch(watchpath)
@@ -77,29 +91,29 @@ def main():
             logger.debug("Watch status is %s" % data)
             if data == 'end':
                 logger.debug('End node received, exit')
-                rsyncD.set_ready()        
+                rsyncD.set_ready()
         dest_Q = LockingQueue(rsyncD, rsyncD.znode_path(session + '/destQ'))
         dest_Q.put(rsyncD.daemon_info())
-        
+
         while not rsyncD.is_ready():
             # Wait for closing signal
-            time.sleep(15)
-            
+            time.sleep(SLEEP_TIME)
+
         logger.debug('%s Ready' % rsyncD.get_whoami())
-        #exit daemon
+        # exit daemon
         rsyncD.exit()
-        
-    elif go.options.source:
+
+    elif type == "source":
         # Start zookeeper connections
         rsyncS = RsyncSource(go.options.servers, **kwargs)
         # Try to retrieve session lock
         lockpath = rsyncS.znode_path(session + '/lock')
         watchpath = rsyncS.znode_path(session + '/watch')
         paramstr = rsyncpath + ':' + str(depth)
-        lock = Lock(rsyncS, lockpath, paramstr) # Info about contender..
+        lock = Lock(rsyncS, lockpath, paramstr)  # Info about contender..
         locked = lock.acquire(False)
         dest_Q = LockingQueue(rsyncS, rsyncS.znode_path(session + '/destQ'))
-        
+
         if locked:
             logger.debug('lock acquired')
             if rsyncS.exists(watchpath):
@@ -111,7 +125,7 @@ def main():
 
             logger.debug('building tree, then waiting till empty')
             time.sleep(20)
-            
+
             # Build path_Q
             # Wait till Q is empty
             # if Q is completely empty, so syncing is done:
@@ -123,11 +137,11 @@ def main():
             while len(rsyncS.get_all_hosts()) > 1:
                 logger.debug("clients still connected: %s" % rsyncS.get_all_hosts())
                 time.sleep(5)
-            
+
             rsyncS.delete(dest_Q.path, recursive=True)
             rsyncS.delete(watchpath)
             logger.debug('Queues and watch removed')
-            rsyncS.exit() 
+            rsyncS.exit()
             exit()
         else:
             @rsyncS.DataWatch(watchpath)
@@ -136,7 +150,7 @@ def main():
                 if data == 'end':
                     logger.debug('End node received, exit')
                     rsyncS.set_ready()
-   
+
             params = lock.contenders()
             if not params or params.count(params[0]) != len(params):
                 logger.error('central params not found or invalid')
@@ -145,16 +159,16 @@ def main():
                 logger.error('params of this client (%s) are not the same as master(%s)' % (paramstr, params[0]))
                 exit(1)
             logger.debug(params[0])
-            logger.debug('ready to do some rsyncing')    
+            logger.debug('ready to do some rsyncing')
             while not rsyncS.is_ready():
                 # get on Q with timeout
                 # check element , ok or continue with next iteration
                 logger.debug('rsyncing')
-                time.sleep(12)
-                
+                time.sleep(TIME_OUT)
+
             logger.debug('%s Ready' % rsyncS.get_whoami())
-            rsyncS.exit()    
-             
+            rsyncS.exit()
+
 if __name__ == '__main__':
     logger = fancylogger.getLogger()
     main()
