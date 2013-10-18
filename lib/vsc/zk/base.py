@@ -37,12 +37,11 @@ class VscKazooClient(KazooClient):
         self.log = fancylogger.getLogger(self.__class__.__name__, fname=False)
         self.parties = {}
         self.whoami = self.get_whoami(name)
-                
-        if session:
-            self.session = session
-        else:
-            self.session = 'default'            
-        
+
+        if session is None:
+            session = 'default'
+        self.session = session
+
         kwargs = {
             'hosts'       : ','.join(hosts),
             'default_acl' : default_acl,
@@ -52,7 +51,7 @@ class VscKazooClient(KazooClient):
         super(VscKazooClient, self).__init__(**kwargs)
         self.start()
         self.log.debug('started')
-        
+
         if self.BASE_PARTIES:
             self.join_parties(self.BASE_PARTIES)
 
@@ -74,9 +73,9 @@ class VscKazooClient(KazooClient):
         else:
             self.log.debug("Joining %s parties: %s", len(parties), ", ".join(parties))
             for party in parties:
-                
+
                 partypath = self.BASE_ZNODE + '/' + self.session + '/parties/' + party
-                thisparty = Party(self, partypath,self.whoami)
+                thisparty = Party(self, partypath, self.whoami)
                 thisparty.join()
                 self.parties[party] = thisparty
 
@@ -87,7 +86,7 @@ class VscKazooClient(KazooClient):
             znode = base_znode_string
         elif isinstance(znode, (tuple, list)):
             znode = os.path.join(znode)
-        
+
         if isinstance(znode, basestring):
             if not znode.startswith(base_znode_string):
                 if not znode.startswith('/'):
@@ -99,7 +98,7 @@ class VscKazooClient(KazooClient):
         self.log.debug("znode %s" % znode)
         return znode
 
-    def make_znode(self, znode=None, value="", acl=None, **kwargs ):
+    def make_znode(self, znode=None, value="", acl=None, **kwargs):
         """Make a znode, raise NodeExistsError if exists"""
         znode_path = self.znode_path(znode)
         self.log.debug("znode path is: %s" % znode_path)
@@ -107,17 +106,17 @@ class VscKazooClient(KazooClient):
             znode = self.create(znode_path, value=value, acl=acl, **kwargs)
         except NodeExistsError:
             self.log.raiseException('znode %s already exists' % znode_path)
-        except NoNodeError:  
+        except NoNodeError:
             self.log.raiseException('parent node(s) of znode %s missing' % znode_path)
-        
+
         self.log.debug("znode %s created in zookeeper" % znode)
         return znode
-        
+
     def exists_znode(self, znode=None):
         """Checks if znode exists"""
         znode_path = self.znode_path(znode)
         return self.exists(znode_path)
-        
+
     def znode_acls(self, znode=None, acl=None):
         """set the acl on a znode"""
         znode_path = self.znode_path(znode)
@@ -125,13 +124,13 @@ class VscKazooClient(KazooClient):
             self.set_acls(znode_path, acl)
         except NoAuthError:
             self.log.raiseException('No valid authentication!')
-        except NoNodeError:  
+        except NoNodeError:
             self.log.raiseException('node %s doesn\'t exists' % znode_path)
-        
+
         self.log.debug("added ACL for znode %s in zookeeper" % znode_path)
-        
+
     def exit(self):
         """stop and close the connection"""
         self.stop()
         self.close()
-        
+

@@ -25,42 +25,42 @@ from vsc.utils.generaloption import simple_option
 from vsc.zk.base import VscKazooClient
 from vsc.zk.parser import get_rootinfo, parse_zkconfig, parse_acls
 
+logger = fancylogger.getLogger()
 
 def main():
     options = {
-        'servers':('list of zk servers', 'strlist', 'store', None)  
+        'servers':('list of zk servers', 'strlist', 'store', None)
     }
     go = simple_option(options)
 
-    rpasswd, rpath = get_rootinfo(go.configfile_remainder)    
+    rpasswd, rpath = get_rootinfo(go.configfile_remainder)
     znodes, users = parse_zkconfig(go.configfile_remainder)
 
     logger.debug("znodes: %s" % znodes)
     logger.debug("users: %s" % users)
 
-    #Connect to zookeeper
+    # Connect to zookeeper
     # initial authentication credentials and acl for admin on root level
-    acreds = [('digest', 'root:'+rpasswd)] 
+    acreds = [('digest', 'root:' + rpasswd)]
     root_acl = make_digest_acl('root', rpasswd, all=True)
 
-    #Create kazoo/zookeeper connection with root credentials
+    # Create kazoo/zookeeper connection with root credentials
     servers = go.options.servers
     zkclient = VscKazooClient(servers, auth_data=acreds)
-          
-    #Iterate paths
+
+    # Iterate paths
     for path, attrs in znodes.iteritems():
         logger.debug("path %s attribs %s" % (path, attrs))
-        acls = dict((arg,attrs[arg]) for arg in attrs if arg not in ('value','ephemeral','sequence','makepath'))
+        acls = dict((arg, attrs[arg]) for arg in attrs if arg not in ('value', 'ephemeral', 'sequence', 'makepath'))
         acl_list = parse_acls(acls, users, root_acl)
-        kwargs = dict((arg,attrs[arg]) for arg in attrs if arg in ('ephemeral','sequence','makepath'))
+        kwargs = dict((arg, attrs[arg]) for arg in attrs if arg in ('ephemeral', 'sequence', 'makepath'))
         if not zkclient.exists_znode(path):
-            zkclient.make_znode(path, value=attrs.get('value',''), acl=acl_list, **kwargs)
+            zkclient.make_znode(path, value=attrs.get('value', ''), acl=acl_list, **kwargs)
         else:
             logger.warning('node %s already exists' % path)
             zkclient.znode_acls(path, acl_list)
-            
+
     zkclient.exit()
 
 if __name__ == '__main__':
-    logger = fancylogger.getLogger()
     main()

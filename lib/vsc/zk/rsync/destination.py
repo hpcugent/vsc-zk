@@ -22,13 +22,14 @@ zk.rsync server
 
 import socket
 
+from kazoo.recipe.queue import LockingQueue
 from vsc.zk.rsync.controller import RsyncController
 
 class RsyncDestination(RsyncController):
 
     BASE_PARTIES = RsyncController.BASE_PARTIES + ['dests']
-    
-    def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None, rsyncport=873):
+
+    def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None, rsyncpath=None, rsyncport=873):
 
         kwargs = {
             'hosts'       : hosts,
@@ -36,18 +37,32 @@ class RsyncDestination(RsyncController):
             'name'        : name,
             'default_acl' : default_acl,
             'auth_data'   : auth_data,
+            'rsyncpath'   : rsyncpath,
         }
         super(RsyncDestination, self).__init__(**kwargs)
-        
+
         # Start Rsync Daemon on free port
         self.daemon_host = socket.gethostname()
         self.daemon_port = rsyncport  # Default
-        
+
     def get_destss(self):
         hosts = []
         for host in self.parties['dests']:
             hosts.append(host)
         return hosts
-    
+
     def daemon_info(self):
         return str(self.daemon_host) + ':' + str(self.daemon_port)
+
+    def run(self):
+
+        watchpath = self.znode_path(self.session + '/watch')
+        @self.DataWatch(watchpath)
+        def ready_watcher(data, stat):
+            self.log.debug("Watch status is %s" % data)
+            if data == 'end':
+                self.log.debug('End node received, exit')
+                self.set_ready()
+        # Add myself to dest_Q
+        dest_Q = LockingQueue(self, self.znode_path(self.session + '/destQ'))
+        dest_Q.put(self.daemon_info())

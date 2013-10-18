@@ -20,16 +20,17 @@ zk.rsync controller
 @author: Kenneth Waegeman (Ghent University)
 """
 
+from kazoo.recipe.queue import LockingQueue
 from vsc.zk.base import VscKazooClient
 
 class RsyncController(VscKazooClient):
 
     BASE_ZNODE = '/admin/rsync'
     BASE_PARTIES = ['allsd']
-    
-    def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None):
-        
-        self.ready= False
+
+    def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None, rsyncpath=None):
+
+        self.ready = False
         kwargs = {
             'hosts'       : hosts,
             'session'     : session,
@@ -37,16 +38,20 @@ class RsyncController(VscKazooClient):
             'default_acl' : default_acl,
             'auth_data'   : auth_data,
         }
+        self.rsyncpath = rsyncpath
         super(RsyncController, self).__init__(**kwargs)
-        
+
     def get_all_hosts(self):
         hosts = []
         for host in self.parties['allsd']:
             hosts.append(host)
-        return hosts        
-   
+        return hosts
+
     def set_ready(self):
         self.ready = True
-    
+
     def is_ready(self):
         return self.ready
+
+    def dest_Q(self):
+        return LockingQueue(self, self.znode_path(self.session + '/destQ'))
