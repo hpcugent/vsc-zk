@@ -26,7 +26,7 @@ from kazoo.recipe.watchers import DataWatch
 from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
 from vsc.utils.generaloption import simple_option
-from vsc.zk.parser import get_rootinfo, parse_zkconfig, parse_acls
+from vsc.zk.configparser import get_rootinfo, parse_zkconfig, parse_acls
 from vsc.zk.rsync.source import RsyncSource
 from vsc.zk.rsync.destination import RsyncDestination
 
