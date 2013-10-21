@@ -22,6 +22,7 @@ zk.rsync source
 """
 
 from kazoo.recipe.lock import Lock
+from kazoo.recipe.queue import LockingQueue
 from vsc.zk.rsync.controller import RsyncController
 
 class RsyncSource(RsyncController):
@@ -32,9 +33,10 @@ class RsyncSource(RsyncController):
     """
 
     BASE_PARTIES = RsyncController.BASE_PARTIES + ['sources']
+    SLEEPTIME = 5
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None):
+                 auth_data=None, rsyncpath=None, rsyncdepth=-1):
 
         kwargs = {
             'hosts'       : hosts,
@@ -44,10 +46,15 @@ class RsyncSource(RsyncController):
             'auth_data'   : auth_data,
             'rsyncpath'   : rsyncpath,
         }
-        self.lock = None
         super(RsyncSource, self).__init__(**kwargs)
 
         self.lockpath = self.znode_path(self.session + '/lock')
+        self.lock = None
+        self.path_queue = LockingQueue(self, self.znode_path(self.session + '/pathQueue'))
+        if rsyncdepth < 1:
+            self.log.raiseException('Invalid rsync depth: %i' % rsyncdepth)
+        else:
+            self.rsyncdepth = rsyncdepth
 
     def get_sources(self):
         """ Get all zookeeper clients in this session registered as clients """
@@ -92,9 +99,7 @@ class RsyncSource(RsyncController):
 
         while len(self.get_all_hosts()) > 1:
             self.log.debug("clients still connected: %s" % self.get_all_hosts())
-            time.sleep(5)
+            time.sleep(self.SLEEPTIME)
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.watchpath)
         self.log.debug('Queues and watch removed')
-
-

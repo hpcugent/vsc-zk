@@ -79,7 +79,8 @@ def main():
         'session'     : session,
         'default_acl' : [admin_acl],
         'auth_data'   : acreds,
-        'rsyncpath'   : rsyncpath
+        'rsyncpath'   : rsyncpath,
+        'rsyncdepth'  : depth,
         }
 
     if type == "destination":

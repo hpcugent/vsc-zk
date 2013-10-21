@@ -28,6 +28,7 @@ from kazoo.recipe.party import Party
 from kazoo.exceptions import NodeExistsError, NoNodeError, NoAuthError
 from vsc.utils import fancylogger
 
+
 class VscKazooClient(KazooClient):
 
     BASE_ZNODE = '/admin'
@@ -57,11 +58,11 @@ class VscKazooClient(KazooClient):
 
     def get_whoami(self, name=None):
         """Create a unique name for this client"""
-        data = [socket.gethostname(), os.getpid()]
+        data = [socket.gethostname(), str(os.getpid())]
         if name:
             data.append(name)
 
-        res = '-'.join(str(x) for x in data)
+        res = '-'.join(data)
         self.log.debug("get_whoami: %s" % res)
         return res
 
@@ -85,7 +86,7 @@ class VscKazooClient(KazooClient):
         if znode is None:
             znode = base_znode_string
         elif isinstance(znode, (tuple, list)):
-            znode = '/'.join(str(x) for x in znode)
+            znode = '/'.join(znode)
 
         if isinstance(znode, basestring):
             if not znode.startswith(base_znode_string):
