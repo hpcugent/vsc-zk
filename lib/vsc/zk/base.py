@@ -74,7 +74,7 @@ class VscKazooClient(KazooClient):
             self.log.debug("Joining %s parties: %s", len(parties), ", ".join(parties))
             for party in parties:
 
-                partypath = self.BASE_ZNODE + '/' + self.session + '/parties/' + party
+                partypath = '%s/%s/parties/%s' % (self.BASE_ZNODE, self.session, party)
                 thisparty = Party(self, partypath, self.whoami)
                 thisparty.join()
                 self.parties[party] = thisparty
@@ -85,12 +85,12 @@ class VscKazooClient(KazooClient):
         if znode is None:
             znode = base_znode_string
         elif isinstance(znode, (tuple, list)):
-            znode = os.path.join(znode)
+            znode = '/'.join(str(x) for x in znode)
 
         if isinstance(znode, basestring):
             if not znode.startswith(base_znode_string):
                 if not znode.startswith('/'):
-                    znode = os.path.join(self.BASE_ZNODE, znode)
+                    znode = '%s/%s' % (self.BASE_ZNODE, znode)
                 else:
                     self.log.raiseException('path %s not subpath of %s ' % (znode, base_znode_string))
         else:
@@ -123,7 +123,7 @@ class VscKazooClient(KazooClient):
         try:
             self.set_acls(znode_path, acl)
         except NoAuthError:
-            self.log.raiseException('No valid authentication!')
+            self.log.raiseException('No valid authentication for (%s) on path %s!' % (self.auth_data, znode_path))
         except NoNodeError:
             self.log.raiseException('node %s doesn\'t exists' % znode_path)
 

@@ -19,7 +19,7 @@ vsc-zk zkrsync
 @author: Kenneth Waegeman (Ghent University)
 """
 
-import time
+import time, sys
 from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
 from kazoo.recipe.watchers import DataWatch
@@ -57,9 +57,10 @@ def zkrsync_parse(options):
     elif options.destination:
         type = "destination"
 
-    return options.servers, options.path, options.depth, options.session, rootcreds, admin_acl, type
+    return options.servers, options.rsyncpath, options.depth, options.session, rootcreds, admin_acl, type
 
 def main():
+    """ Start a new rsync client (destination or source) in a specified session """
     options = {
         'servers'     : ('list of zk servers', 'strlist', 'store', None),
         'source'      : ('rsync source', None, 'store_true', False, 'S'),
@@ -103,23 +104,17 @@ def main():
             watchnode = rsyncS.start_watch()
             if not watchnode:
                 sys.exit(1)
-            rsyncS.build_pathQ()
-            # TODO Wait till Q is empty
-            # TODO if Q is completely empty, so syncing is done:
+            rsyncS.build_pathqueue()
+            # TODO Wait till pathqueue is empty
+            # TODO if pathqueue is completely empty, so syncing is done:
             rsyncS.shutdown_all()
             rsyncS.exit()
             sys.exit(0)
         else:
-            @rsyncS.DataWatch(rsyncS.watchpath())
-            def ready_watcher(data, stat):
-                logger.debug("Watch status is %s" % data)
-                if data == 'end':
-                    logger.debug('End node received, exit')
-                    rsyncS.set_ready()
-
+            rsyncS.stop_with_watch()
             logger.debug('ready to do some rsyncing')
             while not rsyncS.is_ready():
-                # get on Q with timeout
+                # get on pathqueue with timeout
                 # check element , ok or continue with next iteration
                 logger.debug('rsyncing')
                 time.sleep(TIME_OUT)

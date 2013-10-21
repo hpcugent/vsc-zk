@@ -23,11 +23,12 @@ from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
 from vsc.utils.generaloption import simple_option
 from vsc.zk.base import VscKazooClient
-from vsc.zk.parser import get_rootinfo, parse_zkconfig, parse_acls
+from vsc.zk.configparser import get_rootinfo, parse_zkconfig, parse_acls
 
 logger = fancylogger.getLogger()
 
 def main():
+    """ Builds a zookeeper tree with ACLS on from a config file"""
     options = {
         'servers':('list of zk servers', 'strlist', 'store', None)
     }

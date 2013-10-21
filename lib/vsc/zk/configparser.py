@@ -31,11 +31,11 @@ def get_rootinfo(configremainder):
     """
     rootinfo = configremainder.pop('root', {})
     if 'passwd' not in rootinfo:
-        logger.error('Root user not configured or has no password attribute!')
+        logger.raiseException('Root user not configured or has no password attribute!')
     rpasswd = rootinfo['passwd']
     rpath = rootinfo.get('path', '/')
-    return rpasswd,rpath
-    
+    return rpasswd, rpath
+
 def parse_zkconfig(configremainder):
     """
     takes a hierarchical dictionary of config sections 
@@ -50,37 +50,38 @@ def parse_zkconfig(configremainder):
         if sect.startswith('/'):
             # Parsing paths
             znode = znodes.setdefault(sect, {})
-            for k,v in configremainder[sect].iteritems():
-                if v: # don't parse empty parameters
+            for k, v in configremainder[sect].iteritems():
+                if v:  # don't parse empty parameters
                     znode[k] = v.split(',')
         else:
-            # Parsing users  
+            # Parsing users
             user = users.setdefault(sect, {})
-            for k,v in configremainder[sect].iteritems():
+            for k, v in configremainder[sect].iteritems():
                 user[k] = v.split(',')
             if 'passwd' not in user:
-                logger.error('User %s has no password attribute!' % sect)
-    
-    return znodes, users    
+                logger.raiseException('User %s has no password attribute!' % sect)
+
+    return znodes, users
 
 def parse_acls(acls, users, root_acl):
     """takes a dictionary of acls : users and returns list of ACLs"""
     acl_list = [root_acl]
     for acl, acl_users in acls.iteritems():
-        if acl == 'all': 
+        if acl == 'all':
             acl_r, acl_w, acl_c, acl_d, acl_a = True, True, True, True, True
         else:
-            acl_r= 'r' in acl
-            acl_w= 'w' in acl
-            acl_c= 'c' in acl
-            acl_d= 'd' in acl
-            acl_a= 'a' in acl
-      
-        for acl_user in acl_users:  
+            acl_r = 'r' in acl
+            acl_w = 'w' in acl
+            acl_c = 'c' in acl
+            acl_d = 'd' in acl
+            acl_a = 'a' in acl
+
+        for acl_user in acl_users:
             if acl_user not in users:
-                logger.error('User %s not configured!' % acl_user)
+                logger.raiseException('User %s not configured!' % acl_user)
             else:
-                tacl = make_digest_acl(acl_user, str(users[acl_user].get('passwd')), read=acl_r, write=acl_w, create=acl_c, delete=acl_d, admin=acl_a)
+                tacl = make_digest_acl(acl_user, str(users[acl_user].get('passwd')), \
+                    read=acl_r, write=acl_w, create=acl_c, delete=acl_d, admin=acl_a)
                 acl_list.append(tacl)
     logger.debug("acl list %s" % acl_list)
     return acl_list
