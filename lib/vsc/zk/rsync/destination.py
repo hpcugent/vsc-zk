@@ -23,6 +23,7 @@ zk.rsync server
 import socket
 
 from kazoo.recipe.queue import LockingQueue
+from vsc.utils.run import run_simple
 from vsc.zk.rsync.controller import RsyncController
 
 class RsyncDestination(RsyncController):
@@ -33,7 +34,7 @@ class RsyncDestination(RsyncController):
     BASE_PARTIES = RsyncController.BASE_PARTIES + ['dests']
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, rsyncport=873):
+                 auth_data=None, rsyncpath=None, rsyncport=873):  # root default rsyncport: 873
 
         kwargs = {
             'hosts'       : hosts,
@@ -60,8 +61,21 @@ class RsyncDestination(RsyncController):
         """ Return hostname:port of rsync daemon"""
         return '%s:%s' % (self.daemon_host, str(self.daemon_port))
 
-    def run(self):
+    def run_rsync(self):
+        """ Runs the rsync command """
+        # run_with_watch('rsync --daemon --no-detach --port self.daemon_port')
+        pass  # TODO
+
+    def run_netcat(self):
+        """ Test run with netcat """
+        return self.run_with_watch('nc -l -k -p %s' % self.daemon_port)
+
+    def run(self, netcat=False):
         """Starts rsync daemon and add to the queue"""
-        self.stop_with_watch()
-        # Add myself to dest_Q
+        self.ready_with_stop_watch()
+        # Add myself to dest_queue
         self.dest_queue.put(self.daemon_info())
+        if netcat:
+            self.run_netcat()
+        else:
+            self.run_rsync()

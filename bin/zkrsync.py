@@ -27,10 +27,11 @@ from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
 from vsc.utils.generaloption import simple_option
 from vsc.zk.configparser import get_rootinfo, parse_zkconfig, parse_acls
-from vsc.zk.rsync.source import RsyncSource
 from vsc.zk.rsync.destination import RsyncDestination
+from vsc.zk.rsync.source import RsyncSource
 
-SLEEP_TIME = 15
+
+SLEEP_TIME = 5
 TIME_OUT = 15
 logger = fancylogger.getLogger()
 
@@ -57,7 +58,8 @@ def zkrsync_parse(options):
     elif options.destination:
         type = "destination"
 
-    return options.servers, options.rsyncpath, options.depth, options.session, rootcreds, admin_acl, type
+    return options.servers, options.rsyncpath, options.depth, \
+        options.session, rootcreds, admin_acl, type, options.rsyncport, options.netcat
 
 def main():
     """ Start a new rsync client (destination or source) in a specified session """
@@ -70,55 +72,53 @@ def main():
         'depth'       : ('queue depth', None, 'store', 4),
         'user'        : ('user with create rights on zookeeper', None, 'store', 'root', 'u'),
         'passwd'      : ('password for user with create rights', None, 'store', 'admin', 'p'),
+        'rsyncport'   : ('port on wich rsync binds', None, 'store', 4444),
+        'netcat'      : ('run netcat test instead of rsync', None, 'store_true', False),
     }
 
     go = simple_option(options)
-    servers, rsyncpath, depth, session, acreds, admin_acl, type = zkrsync_parse(go.options)
+    servers, rsyncpath, depth, session, acreds, admin_acl, type, rsyncport, netcat = zkrsync_parse(go.options)
 
     kwargs = {
         'session'     : session,
         'default_acl' : [admin_acl],
         'auth_data'   : acreds,
         'rsyncpath'   : rsyncpath,
-        'rsyncdepth'  : depth,
         }
 
     if type == "destination":
         # Start zookeeper connection and rsync daemon
-        rsyncD = RsyncDestination(servers, **kwargs)
-        rsyncD.run()
-
-        while not rsyncD.is_ready():  # Wait until receiving signal
-            time.sleep(SLEEP_TIME)
+        rsyncD = RsyncDestination(servers, rsyncport=rsyncport, **kwargs)
+        rsyncD.run(netcat)
 
         logger.debug('%s Ready' % rsyncD.get_whoami())
         rsyncD.exit()
+        sys.exit(0)
 
     elif type == "source":
         # Start zookeeper connections
-        rsyncS = RsyncSource(servers, **kwargs)
+        rsyncS = RsyncSource(servers, rsyncdepth=depth, **kwargs)
         # Try to retrieve session lock
         locked = rsyncS.acq_lock()
 
         if locked:
             logger.debug('lock acquired')
-            watchnode = rsyncS.start_watch()
+            watchnode = rsyncS.start_ready_rwatch()
             if not watchnode:
                 sys.exit(1)
             rsyncS.build_pathqueue()
-            # TODO Wait till pathqueue is empty
-            # TODO if pathqueue is completely empty, so syncing is done:
+            while not rsyncS.isempty_pathqueue():
+                time.sleep(SLEEP_TIME)
             rsyncS.shutdown_all()
             rsyncS.exit()
             sys.exit(0)
         else:
-            rsyncS.stop_with_watch()
+            rsyncS.ready_with_stop_watch()
             logger.debug('ready to do some rsyncing')
             while not rsyncS.is_ready():
-                # get on pathqueue with timeout
-                # check element , ok or continue with next iteration
-                logger.debug('rsyncing')
-                time.sleep(TIME_OUT)
+                logger.debug('start rsyncing')
+                time.sleep(SLEEP_TIME)
+                rsyncS.rsync(2, netcat)
 
             logger.debug('%s Ready' % rsyncS.get_whoami())
             rsyncS.exit()

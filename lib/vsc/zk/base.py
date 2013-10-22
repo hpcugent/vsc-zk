@@ -24,10 +24,33 @@ import os
 import socket
 
 from kazoo.client import KazooClient
-from kazoo.recipe.party import Party
 from kazoo.exceptions import NodeExistsError, NoNodeError, NoAuthError
+from kazoo.recipe.party import Party
 from vsc.utils import fancylogger
+from vsc.utils.run import RunAsyncLoopLog, RunLoopException
 
+class RunWatchLoopLog(RunAsyncLoopLog):
+    """When zookeeperclient is ready, stop"""
+    def __init__(self, cmd, **kwargs):
+
+        self.watchclient = kwargs.pop('watchclient', None)
+        super(RunWatchLoopLog, self).__init__(cmd, **kwargs)
+        self.log.debug("watchclient %s registered" % self.watchclient)
+
+
+    def _loop_process_output(self, output):
+        """Process the output that is read in blocks
+        send it to the logger. The logger need to be stream-like
+        When watch is ready, stop
+        """
+        super(RunWatchLoopLog, self)._loop_process_output(output)
+        # self.log.debug("watchclient status %s" % self.watchclient.is_ready())
+        if self.watchclient.is_ready():
+            self.log.debug("watchclient %s ready" % self.watchclient)
+            self.stop_tasks()
+            raise RunLoopException(101, self._process_output)
+
+run_watch = RunWatchLoopLog.run
 
 class VscKazooClient(KazooClient):
 
@@ -38,6 +61,7 @@ class VscKazooClient(KazooClient):
         self.log = fancylogger.getLogger(self.__class__.__name__, fname=False)
         self.parties = {}
         self.whoami = self.get_whoami(name)
+        self.ready = False
 
         if session is None:
             session = 'default'
@@ -53,6 +77,8 @@ class VscKazooClient(KazooClient):
         self.start()
         self.log.debug('started')
 
+        self.watchpath = self.znode_path(self.session + '/watch')
+
         if self.BASE_PARTIES:
             self.join_parties(self.BASE_PARTIES)
 
@@ -67,7 +93,7 @@ class VscKazooClient(KazooClient):
         return res
 
     def join_parties(self, parties=None):
-        """List of parties, join them all"""
+        """ List of parties, join them all"""
         if parties is None or not parties:
             self.log.debug("No parties to join specified")
             parties = []
@@ -130,8 +156,60 @@ class VscKazooClient(KazooClient):
 
         self.log.debug("added ACL for znode %s in zookeeper" % znode_path)
 
+    def set_watch_value(self, watch, value):
+        """Sets the value of an existing watch"""
+        watchpath = '%s/%s' % (self.watchpath, watch)
+        self.set(watchpath, value)
+
+    def new_watch(self, watch, value):
+        """ Start a watch other clients can register to """
+        watchpath = '%s/%s' % (self.watchpath, watch)
+        if self.exists(watchpath):
+            self.log.error('watchnode %s already exists!' % watchpath)
+            return False
+        return self.make_znode(watchpath, value, makepath=True)
+
+    def remove_watch(self, watch):
+        """ Removes a wath """
+        watchpath = '%s/%s' % (self.watchpath, watch)
+        self.delete(watchpath)
+
+    def set_ready(self):
+        """Set when work is done"""
+        self.ready = True
+
+    def is_ready(self):
+        return self.ready
+
+    def start_ready_watch(self):
+        """ Start a ready watch other clients can register to """
+        return self.new_watch('ready', 'start')
+
+    def stop_ready_watch(self):
+        """ Stops the ready watch"""
+        self.set_watch_value('ready', 'stop')
+
+    def remove_ready_watch(self):
+        """ removes the ready watch"""
+        self.remove_watch('ready')
+
+
     def exit(self):
         """stop and close the connection"""
         self.stop()
         self.close()
 
+    def ready_with_stop_watch(self):
+        """Register to watch and set to ready when watch is set to 'stop' """
+        watchpath = '%s/%s' % (self.watchpath, 'ready')
+        @self.DataWatch(watchpath)
+        def ready_watcher(data, stat):
+            self.log.debug("Watch status is %s" % data)
+            if data == 'stop':
+                self.log.debug('End node received, set ready')
+                self.set_ready()
+
+    def run_with_watch(self, command):
+        """ Runs a command that stops when watchclient is ready """
+        code, output = run_watch(command, watchclient=self)
+        return code, output
