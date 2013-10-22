@@ -30,9 +30,8 @@ from vsc.zk.configparser import get_rootinfo, parse_zkconfig, parse_acls
 from vsc.zk.rsync.destination import RsyncDestination
 from vsc.zk.rsync.source import RsyncSource
 
-
 SLEEP_TIME = 5
-TIME_OUT = 15
+TIME_OUT = 5
 logger = fancylogger.getLogger()
 
 def zkrsync_parse(options):
@@ -77,7 +76,8 @@ def main():
     }
 
     go = simple_option(options)
-    servers, rsyncpath, depth, session, acreds, admin_acl, type, rsyncport, netcat = zkrsync_parse(go.options)
+    (servers, rsyncpath, depth, session, acreds,
+     admin_acl, type, rsyncport, netcat) = zkrsync_parse(go.options)
 
     kwargs = {
         'session'     : session,
@@ -117,8 +117,7 @@ def main():
             logger.debug('ready to do some rsyncing')
             while not rsyncS.is_ready():
                 logger.debug('start rsyncing')
-                time.sleep(SLEEP_TIME)
-                rsyncS.rsync(2, netcat)
+                rsyncS.rsync(TIME_OUT, netcat)
 
             logger.debug('%s Ready' % rsyncS.get_whoami())
             rsyncS.exit()

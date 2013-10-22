@@ -93,7 +93,7 @@ class VscKazooClient(KazooClient):
         return res
 
     def join_parties(self, parties=None):
-        """ List of parties, join them all"""
+        """List of parties, join them all"""
         if parties is None or not parties:
             self.log.debug("No parties to join specified")
             parties = []

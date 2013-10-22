@@ -34,7 +34,7 @@ class RsyncSource(RsyncController):
     """
 
     BASE_PARTIES = RsyncController.BASE_PARTIES + ['sources']
-    SLEEPTIME = 5
+    SLEEPTIME = 2
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncdepth=-1):
@@ -88,7 +88,7 @@ class RsyncSource(RsyncController):
         self.log.debug('removing old tree, building tree')
         if self.exists(self.znode_path(self.session + '/pathQueue')):
             self.delete(self.znode_path(self.session + '/pathQueue'), recursive=True)
-        paths = [str(i) for i in range(5)]
+        paths = [str(i) for i in range(50)]
         self.path_queue.put_all(paths)
         time.sleep(self.SLEEPTIME)  # stub
         self.log.debug('tree finished')
@@ -123,6 +123,7 @@ class RsyncSource(RsyncController):
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
+        time.sleep(self.SLEEPTIME)
         return run_simple('echo %s is sending %s | nc %s %s' % (self.whoami, path, host, port))
 
     def rsync_path(self, path, destination, netcat=False):
