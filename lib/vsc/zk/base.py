@@ -86,7 +86,7 @@ class VscKazooClient(KazooClient):
 
     def get_whoami(self, name=None):
         """Create a unique name for this client"""
-        data = [socket.gethostname(), str(os.getpid())]
+        data = [socket.getfqdn(), str(os.getpid())]
         if name:
             data.append(name)
 

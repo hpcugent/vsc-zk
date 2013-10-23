@@ -46,8 +46,11 @@ class RsyncDestination(RsyncController):
         }
         super(RsyncDestination, self).__init__(**kwargs)
 
-        # Start Rsync Daemon on free port
-        self.daemon_host = socket.gethostname()
+        host = socket.getfqdn()
+        if host.endswith('.os'):  # Temporary fix for vsc
+            tmp = host.rsplit('.os', 1)
+            host = '.gent.vsc'.join(tmp)
+        self.daemon_host = host
         self.daemon_port = rsyncport  # Default
 
     def get_destss(self):
@@ -64,11 +67,11 @@ class RsyncDestination(RsyncController):
     def run_rsync(self):
         """ Runs the rsync command """
         # run_with_watch('rsync --daemon --no-detach --port self.daemon_port')
-        pass  # TODO
+        return self.run_with_watch('nc -l -k %s' % self.daemon_port)  # TODO
 
     def run_netcat(self):
         """ Test run with netcat """
-        return self.run_with_watch('nc -l -k -p %s' % self.daemon_port)
+        return self.run_with_watch('nc -l -k %s' % self.daemon_port)
 
     def run(self):
         """Starts rsync daemon and add to the queue"""
@@ -79,3 +82,4 @@ class RsyncDestination(RsyncController):
             self.run_netcat()
         else:
             self.run_rsync()
+

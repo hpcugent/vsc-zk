@@ -24,6 +24,7 @@ zk.rsync source
 from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
 from vsc.utils.run import RunAsyncLoopLog
+from vsc.zk.depthwalk import get_pathlist
 from vsc.zk.rsync.controller import RsyncController
 
 class RsyncSource(RsyncController):
@@ -54,7 +55,7 @@ class RsyncSource(RsyncController):
         self.lockpath = self.znode_path(self.session + '/lock')
         self.lock = None
         self.path_queue = LockingQueue(self, self.znode_path(self.session + '/pathQueue'))
-        if rsyncdepth < 1:
+        if rsyncdepth < 0:
             self.log.raiseException('Invalid rsync depth: %i' % rsyncdepth)
         else:
             self.rsyncdepth = rsyncdepth
@@ -79,6 +80,8 @@ class RsyncSource(RsyncController):
         """ Start a watch other clients can register to, but release lock and exit on error """
         watch = self.start_ready_watch()
         if not watch:
+            if len(self.get_all_hosts()) == 1:  # Fix existing problems
+                self.cleanup()
             self.release_lock()
             self.exit()
             return False
@@ -88,14 +91,14 @@ class RsyncSource(RsyncController):
     def build_pathqueue(self):
         """ Build a queue of paths that needs to be rsynced """
         self.log.debug('removing old queue and building new queue')
-        if self.exists(self.znode_path(self.session + '/pathQueue')):
-            self.delete(self.znode_path(self.session + '/pathQueue'), recursive=True)
+        if self.exists(self.path_queue.path):
+            self.delete(self.path_queue.path, recursive=True)
         if self.netcat:
             paths = [str(i) for i in range(5)]
+            time.sleep(self.SLEEPTIME)
         else:
-            paths = None  # TODO
+            paths = get_pathlist(self.rsyncpath, self.rsyncdepth)
         self.path_queue.put_all(paths)
-        time.sleep(self.SLEEPTIME)  # stub
         self.log.debug('pathqueue building finished')
 
     def isempty_pathqueue(self):
@@ -106,16 +109,19 @@ class RsyncSource(RsyncController):
         """ Send end signal and release lock 
         Make sure other clients are disconnected, clean up afterwards."""
         self.stop_ready_watch()
-        self.release_lock()
-        self.log.debug('watch set to stop, lock released')
+        self.log.debug('watch set to stop')
 
         while len(self.get_all_hosts()) > 1:
         #    self.log.debug("clients still connected: %s" % self.get_all_hosts())
             time.sleep(self.WAITTIME)
+        self.cleanup()
+
+    def cleanup(self):
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.path_queue.path, recursive=True)
         self.remove_ready_watch()
-        self.log.debug('Queues and watch removed')
+        self.release_lock()
+        self.log.debug('Lock, Queues and watch removed')
 
     def path_depth(self):
         """ Returns the depth of the path relatively to base path """
@@ -124,7 +130,9 @@ class RsyncSource(RsyncController):
     def run_rsync(self, path, host, port):
         """ Runs the rsync command """
         # Start rsync recursive or non recursive;
-        pass  # TODO
+        time.sleep(self.SLEEPTIME)
+        return RunAsyncLoopLog.run('echo %s is sending "%s" | nc %s %s' % (self.whoami, path, host, port))
+        # TODO
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
@@ -137,14 +145,14 @@ class RsyncSource(RsyncController):
             self.log.raiseException('Empty path given!')
         elif not isinstance(path, basestring):
             self.log.raiseException('Invalid path: %s !' % path)
-        elif not self.netcat and path.startswith(self.rsyncpath):
+        elif not self.netcat and not path.startswith(self.rsyncpath):
             self.log.raiseException('Invalid path! %s is not a subpath of %s!' % (path, self.rsyncpath))
         else:
             host, port = tuple(destination.split(':'))
             if self.netcat:
                 code, output = self.run_netcat(path, host, port)
             else:
-                code, output = self.run_rsync()
+                code, output = self.run_rsync(path, host, port)
             self.log.debug('path %s was sent to %s:%s' % (path, host, port))
             # If connection to daemon fails, consume it?
             # TODO: add output to output queue
