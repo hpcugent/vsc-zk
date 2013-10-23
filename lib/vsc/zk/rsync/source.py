@@ -130,9 +130,8 @@ class RsyncSource(RsyncController):
     def run_rsync(self, path, host, port):
         """ Runs the rsync command """
         # Start rsync recursive or non recursive;
-        time.sleep(3)
         self.log.debug('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))  # TODO
-        return true
+        return RunAsyncLoopLog.run('rsync -n --progress %s rsync://%s:%s ' % (path, host, port))
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
