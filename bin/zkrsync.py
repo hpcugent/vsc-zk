@@ -87,7 +87,8 @@ def main():
 
     if type == "destination":
         # Start zookeeper connection and rsync daemon
-        rsyncD = RsyncDestination(go.options.servers, rsyncport=go.options.rsyncport, **kwargs)
+        kwargs['rsyncport'] = go.options.rsyncport
+        rsyncD = RsyncDestination(go.options.servers, **kwargs)
         rsyncD.run()
 
         logger.debug('%s Ready' % rsyncD.get_whoami())
@@ -96,7 +97,8 @@ def main():
 
     elif type == "source":
         # Start zookeeper connections
-        rsyncS = RsyncSource(go.options.servers, rsyncdepth=go.options.depth, **kwargs)
+        kwargs['rsyncdepth'] = go.options.depth
+        rsyncS = RsyncSource(go.options.servers, **kwargs)
         # Try to retrieve session lock
         locked = rsyncS.acq_lock()
 

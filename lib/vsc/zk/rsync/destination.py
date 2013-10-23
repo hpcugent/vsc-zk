@@ -70,7 +70,7 @@ class RsyncDestination(RsyncController):
         """ Test run with netcat """
         return self.run_with_watch('nc -l -k -p %s' % self.daemon_port)
 
-    def run(self, netcat=False):
+    def run(self):
         """Starts rsync daemon and add to the queue"""
         self.ready_with_stop_watch()
         # Add myself to dest_queue
