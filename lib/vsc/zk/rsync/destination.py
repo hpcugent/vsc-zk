@@ -23,7 +23,6 @@ zk.rsync server
 import socket
 
 from kazoo.recipe.queue import LockingQueue
-from vsc.utils.run import run_simple
 from vsc.zk.rsync.controller import RsyncController
 
 class RsyncDestination(RsyncController):
@@ -34,7 +33,7 @@ class RsyncDestination(RsyncController):
     BASE_PARTIES = RsyncController.BASE_PARTIES + ['dests']
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, rsyncport=873):  # root default rsyncport: 873
+                 auth_data=None, rsyncpath=None, rsyncport=873, netcat=False):  # root default rsyncport: 873
 
         kwargs = {
             'hosts'       : hosts,
@@ -43,6 +42,7 @@ class RsyncDestination(RsyncController):
             'default_acl' : default_acl,
             'auth_data'   : auth_data,
             'rsyncpath'   : rsyncpath,
+            'netcat'      : netcat,
         }
         super(RsyncDestination, self).__init__(**kwargs)
 
@@ -75,7 +75,7 @@ class RsyncDestination(RsyncController):
         self.ready_with_stop_watch()
         # Add myself to dest_queue
         self.dest_queue.put(self.daemon_info())
-        if netcat:
+        if self.netcat:
             self.run_netcat()
         else:
             self.run_rsync()

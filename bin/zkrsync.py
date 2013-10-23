@@ -57,8 +57,7 @@ def zkrsync_parse(options):
     elif options.destination:
         type = "destination"
 
-    return options.servers, options.rsyncpath, options.depth, \
-        options.session, rootcreds, admin_acl, type, options.rsyncport, options.netcat
+    return rootcreds, admin_acl, type
 
 def main():
     """ Start a new rsync client (destination or source) in a specified session """
@@ -68,28 +67,28 @@ def main():
         'destination' : ('rsync destination', None, 'store_true', False, 'D'),
         'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),
         'session'     : ('session name', None, 'store', 'default', 'N'),
-        'depth'       : ('queue depth', None, 'store', 4),
+        'depth'       : ('queue depth', "int", 'store', 4),
         'user'        : ('user with create rights on zookeeper', None, 'store', 'root', 'u'),
         'passwd'      : ('password for user with create rights', None, 'store', 'admin', 'p'),
-        'rsyncport'   : ('port on wich rsync binds', None, 'store', 4444),
+        'rsyncport'   : ('port on wich rsync binds', "int", 'store', 4444),
         'netcat'      : ('run netcat test instead of rsync', None, 'store_true', False),
     }
 
     go = simple_option(options)
-    (servers, rsyncpath, depth, session, acreds,
-     admin_acl, type, rsyncport, netcat) = zkrsync_parse(go.options)
+    acreds, admin_acl, type = zkrsync_parse(go.options)
 
     kwargs = {
-        'session'     : session,
+        'session'     : go.options.session,
         'default_acl' : [admin_acl],
         'auth_data'   : acreds,
-        'rsyncpath'   : rsyncpath,
+        'rsyncpath'   : go.options.rsyncpath,
+        'netcat'      : go.options.netcat,
         }
 
     if type == "destination":
         # Start zookeeper connection and rsync daemon
-        rsyncD = RsyncDestination(servers, rsyncport=rsyncport, **kwargs)
-        rsyncD.run(netcat)
+        rsyncD = RsyncDestination(go.options.servers, rsyncport=go.options.rsyncport, **kwargs)
+        rsyncD.run()
 
         logger.debug('%s Ready' % rsyncD.get_whoami())
         rsyncD.exit()
@@ -97,7 +96,7 @@ def main():
 
     elif type == "source":
         # Start zookeeper connections
-        rsyncS = RsyncSource(servers, rsyncdepth=depth, **kwargs)
+        rsyncS = RsyncSource(go.options.servers, rsyncdepth=go.options.depth, **kwargs)
         # Try to retrieve session lock
         locked = rsyncS.acq_lock()
 
@@ -117,7 +116,7 @@ def main():
             logger.debug('ready to do some rsyncing')
             while not rsyncS.is_ready():
                 logger.debug('start rsyncing')
-                rsyncS.rsync(TIME_OUT, netcat)
+                rsyncS.rsync(TIME_OUT)
 
             logger.debug('%s Ready' % rsyncS.get_whoami())
             rsyncS.exit()

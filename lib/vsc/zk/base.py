@@ -29,6 +29,8 @@ from kazoo.recipe.party import Party
 from vsc.utils import fancylogger
 from vsc.utils.run import RunAsyncLoopLog, RunLoopException
 
+RUNRUN_WATCH_EXITCODE = 101
+
 class RunWatchLoopLog(RunAsyncLoopLog):
     """When zookeeperclient is ready, stop"""
     def __init__(self, cmd, **kwargs):
@@ -48,7 +50,7 @@ class RunWatchLoopLog(RunAsyncLoopLog):
         if self.watchclient.is_ready():
             self.log.debug("watchclient %s ready" % self.watchclient)
             self.stop_tasks()
-            raise RunLoopException(101, self._process_output)
+            raise RunLoopException(RUNRUN_WATCH_EXITCODE, self._process_output)
 
 run_watch = RunWatchLoopLog.run
 

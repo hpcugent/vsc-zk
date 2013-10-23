@@ -34,7 +34,7 @@ class RsyncController(VscKazooClient):
     BASE_PARTIES = ['allsd']
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None):
+                 auth_data=None, rsyncpath=None, netcat=None):
 
         kwargs = {
             'hosts'       : hosts,
@@ -44,6 +44,7 @@ class RsyncController(VscKazooClient):
             'auth_data'   : auth_data,
         }
         self.rsyncpath = rsyncpath
+        self.netcat = netcat
         super(RsyncController, self).__init__(**kwargs)
         self.dest_queue = LockingQueue(self, self.znode_path(self.session + '/destQueue'))
 
