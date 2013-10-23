@@ -80,7 +80,7 @@ class RsyncSource(RsyncController):
         """ Start a watch other clients can register to, but release lock and exit on error """
         watch = self.start_ready_watch()
         if not watch:
-            if len(self.get_all_hosts()) == 1:  # Fix existing problems
+            if len(self.get_all_hosts()) == 1:  # Fix previous unclean shutdown
                 self.cleanup()
             self.release_lock()
             self.exit()
@@ -130,14 +130,14 @@ class RsyncSource(RsyncController):
     def run_rsync(self, path, host, port):
         """ Runs the rsync command """
         # Start rsync recursive or non recursive;
-        time.sleep(self.SLEEPTIME)
-        return RunAsyncLoopLog.run('echo %s is sending "%s" | nc %s %s' % (self.whoami, path, host, port))
+        time.sleep(3)
+        return true
         # TODO
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
         time.sleep(self.SLEEPTIME)
-        return RunAsyncLoopLog.run('echo %s is sending %s | nc %s %s' % (self.whoami, path, host, port))
+        return RunAsyncLoopLog.run('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))  # TODO
 
     def rsync_path(self, path, destination):
         """ start rsync session for given path and destination, returns true if successful """

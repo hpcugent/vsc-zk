@@ -66,8 +66,7 @@ class RsyncDestination(RsyncController):
 
     def run_rsync(self):
         """ Runs the rsync command """
-        # run_with_watch('rsync --daemon --no-detach --port self.daemon_port')
-        return self.run_with_watch('nc -l -k %s' % self.daemon_port)  # TODO
+        return self.run_with_watch('sleep 30000')  # TODO
 
     def run_netcat(self):
         """ Test run with netcat """
