@@ -43,5 +43,4 @@ def get_pathlist(path, depth):
     return pathlist
 
 if __name__ == '__main__':  # for testing purposes
-
     get_pathlist('/tmp/test', depth=2)

@@ -131,13 +131,13 @@ class RsyncSource(RsyncController):
         """ Runs the rsync command """
         # Start rsync recursive or non recursive;
         time.sleep(3)
+        self.log.debug('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))  # TODO
         return true
-        # TODO
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
         time.sleep(self.SLEEPTIME)
-        return RunAsyncLoopLog.run('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))  # TODO
+        return RunAsyncLoopLog.run('echo %s is sending %s | nc %s %s' % (self.whoami, path, host, port))
 
     def rsync_path(self, path, destination):
         """ start rsync session for given path and destination, returns true if successful """
