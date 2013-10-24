@@ -73,11 +73,3 @@ def encode_paths(pathlist):
 def decode_path(encpath):
     pathl = encpath.split('_', 1)
     return (pathl[1], int(pathl[0]))
-
-if __name__ == '__main__':  # for testing purposes
-    list = get_pathlist('/tmp/test', depth=3)
-    enclist = encode_paths(list)
-    print list
-    print enclist
-    for l in enclist:
-        print decode_path(l)
