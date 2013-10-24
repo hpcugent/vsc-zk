@@ -76,6 +76,8 @@ class RsyncDestination(RsyncController):
         config.add_section(self.module)
         config.set(self.module, 'path', self.rsyncpath)
         config.set(self.module, 'read only', 'no')
+        config.set(self.module, 'uid', 'root')
+        config.set(self.module, 'gid', 'root')
         config.write(file)
         return name
 
