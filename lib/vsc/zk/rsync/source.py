@@ -138,15 +138,15 @@ class RsyncSource(RsyncController):
         if not path.startswith(self.rsyncpath):
             self.log.raiseException('Invalid path! %s is not a subpath of %s!' % (path, self.rsyncpath))
         # Start rsync recursive or non recursive; archive mode (a) is equivalent to  -rlptgoD (see man rsync)
-        flags = "-n --progress --stats -lptgoD"
+        flags = ['--progress --stats -lptgoD']
         if recursive:
-            flags = '%s -r' % flags
+            flags.append('-r')
         if self.rsync_delete:
-            flags = '%s --delete' % flags
+            flags.append('--delete')
         if self.rsync_dry:
-            flags = '%s -n' % flags
+            flags.append('-n')
         self.log.debug('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))
-        return RunAsyncLoopLog.run('rsync %s %s rsync://%s:%s ' % (flags, path, host, port))
+        return RunAsyncLoopLog.run('rsync %s %s rsync://%s:%s ' % (' '.join(flags), path, host, port))
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
