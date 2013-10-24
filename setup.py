@@ -35,7 +35,7 @@ shared_setup.SHARED_TARGET.update({
 
 PACKAGE = {
     'name': 'vsc-zk',
-    'version': '0.5.4',
+    'version': '0.5.5',
     'author': [sdw],
     'maintainer': [sdw, ag],
     'packages': ['vsc', 'vsc.zk', 'vsc.zk.rsync'],

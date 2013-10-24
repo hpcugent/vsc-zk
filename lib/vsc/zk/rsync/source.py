@@ -13,13 +13,16 @@
 # All rights reserved.
 #
 #
-import time
 """
 zk.rsync source
 
 @author: Stijn De Weirdt (Ghent University)
 @author: Kenneth Waegeman (Ghent University)
 """
+
+import os
+import tempfile
+import time
 
 from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
@@ -122,23 +125,38 @@ class RsyncSource(RsyncController):
         self.cleanup()
 
     def cleanup(self):
+        """ Remove all session nodes in zookeeper """
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.path_queue.path, recursive=True)
         self.remove_ready_watch()
         self.release_lock()
         self.log.debug('Lock, Queues and watch removed')
 
-    def path_depth(self):
-        """ Returns the depth of the path relatively to base path """
-        pass  # TODO
-
-    def run_rsync(self, encpath, host, port):
-        """ Runs the rsync command with or without recursion """
-        path, recursive = decode_path(encpath)
+    def generate_file(self, path):
+        """
+        Writes the relative path used for the rsync of this path, 
+        for use by --files-from. 
+        """
         if not path.startswith(self.rsyncpath):
             self.log.raiseException('Invalid path! %s is not a subpath of %s!' % (path, self.rsyncpath))
+        else:
+            subpath = path[len(self.rsyncpath):]
+            subpath = subpath.strip(os.path.sep)
+
+            fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
+            file = os.fdopen(fd, "w")
+            file.write('%s/' % subpath)
+            return name
+
+    def run_rsync(self, encpath, host, port):
+        """
+        Runs the rsync command with or without recursion, delete or dry-run option.
+        It uses the destination module linked with this session.
+        """
+        path, recursive = decode_path(encpath)
+        file = self.generate_file(path)
         # Start rsync recursive or non recursive; archive mode (a) is equivalent to  -rlptgoD (see man rsync)
-        flags = ['--progress --stats -lptgoD']
+        flags = ['--progress', ' --stats', '-lptgoD', '--files-from=%s' % file]
         if recursive:
             flags.append('-r')
         if self.rsync_delete:
@@ -146,7 +164,8 @@ class RsyncSource(RsyncController):
         if self.rsync_dry:
             flags.append('-n')
         self.log.debug('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))
-        return RunAsyncLoopLog.run('rsync %s %s rsync://%s:%s ' % (' '.join(flags), path, host, port))
+        return RunAsyncLoopLog.run('rsync %s %s/ rsync://%s:%s/%s'
+                                   % (' '.join(flags), self.rsyncpath, host, port, self.module))
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """

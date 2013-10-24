@@ -20,7 +20,10 @@ zk.rsync server
 @author: Kenneth Waegeman (Ghent University)
 """
 
+import ConfigParser
+import os
 import socket
+import tempfile
 
 from kazoo.recipe.queue import LockingQueue
 from vsc.zk.rsync.controller import RsyncController
@@ -65,10 +68,22 @@ class RsyncDestination(RsyncController):
         """ Return hostname:port of rsync daemon"""
         return '%s:%s' % (self.daemon_host, str(self.daemon_port))
 
+    def generate_daemon_config(self):
+        """ Write config file for this session """
+        fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
+        file = os.fdopen(fd, "w")
+        config = ConfigParser.RawConfigParser()
+        config.add_section(self.module)
+        config.set(self.module, 'path', self.rsyncpath)
+        config.set(self.module, 'read only', 'no')
+        config.write(file)
+        return name
+
     def run_rsync(self):
         """ Runs the rsync command """
-        # TODO: config genereren
-        return self.run_with_watch('rsync --daemon --no-detach --port %s' % self.daemon_port)
+        config = self.generate_daemon_config()
+        return self.run_with_watch('rsync --daemon --no-detach --config=%s --port %s'
+                                   % (config, self.daemon_port))
 
     def run_netcat(self):
         """ Test run with netcat """

@@ -19,6 +19,7 @@ zk.rsync controller
 @author: Stijn De Weirdt (Ghent University)
 @author: Kenneth Waegeman (Ghent University)
 """
+
 import os
 import sys
 
@@ -33,6 +34,7 @@ class RsyncController(VscKazooClient):
 
     BASE_ZNODE = '/admin/rsync'
     BASE_PARTIES = ['allsd']
+    RSDIR = '/tmp/zkrsync'
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, netcat=None):
@@ -51,6 +53,9 @@ class RsyncController(VscKazooClient):
         if not netcat:
             if not os.path.isdir(rsyncpath):
                 self.log.raiseException('Path does not exists in filesystem: %s' % rsyncpath)
+            if not os.path.isdir(self.RSDIR):
+                os.mkdir(self.RSDIR, 0700)
+            self.module = 'zkrs-%s' % self.session
 
         self.rsyncpath = rsyncpath
         self.dest_queue = LockingQueue(self, self.znode_path(self.session + '/destQueue'))

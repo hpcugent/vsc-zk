@@ -19,7 +19,9 @@ vsc-zk zkrsync
 @author: Kenneth Waegeman (Ghent University)
 """
 
-import time, sys
+import sys
+import time
+
 from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
 from kazoo.recipe.watchers import DataWatch
