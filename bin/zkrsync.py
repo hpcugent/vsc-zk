@@ -73,7 +73,7 @@ def main():
         'passwd'      : ('password for user with create rights', None, 'store', 'admin', 'p'),
         'rsyncport'   : ('port on wich rsync binds', "int", 'store', 4444),
         'netcat'      : ('run netcat test instead of rsync', None, 'store_true', False),
-        'dryrun'     : ('run rsync in dry run mode', None, 'store_true', False, 'n'),
+        'dryrun'      : ('run rsync in dry run mode', None, 'store_true', False, 'n'),
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
     }
 
