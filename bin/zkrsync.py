@@ -63,6 +63,7 @@ def main():
     """ Start a new rsync client (destination or source) in a specified session """
     options = {
         'servers'     : ('list of zk servers', 'strlist', 'store', None),
+        'domain'      : ('substitute domain', None, 'store', None),
         'source'      : ('rsync source', None, 'store_true', False, 'S'),
         'destination' : ('rsync destination', None, 'store_true', False, 'D'),
         'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),
@@ -72,6 +73,8 @@ def main():
         'passwd'      : ('password for user with create rights', None, 'store', 'admin', 'p'),
         'rsyncport'   : ('port on wich rsync binds', "int", 'store', 4444),
         'netcat'      : ('run netcat test instead of rsync', None, 'store_true', False),
+        'dryrun'     : ('run rsync in dry run mode', None, 'store_true', False, 'n'),
+        'delete'      : ('run rsync with --delete', None, 'store_true', False),
     }
 
     go = simple_option(options)
@@ -88,6 +91,7 @@ def main():
     if type == "destination":
         # Start zookeeper connection and rsync daemon
         kwargs['rsyncport'] = go.options.rsyncport
+        kwargs['domain'] = go.options.domain
         rsyncD = RsyncDestination(go.options.servers, **kwargs)
         rsyncD.run()
 
@@ -98,6 +102,8 @@ def main():
     elif type == "source":
         # Start zookeeper connections
         kwargs['rsyncdepth'] = go.options.depth
+        kwargs['dryrun'] = go.options.dryrun
+        kwargs['delete'] = go.options.delete
         rsyncS = RsyncSource(go.options.servers, **kwargs)
         # Try to retrieve session lock
         locked = rsyncS.acq_lock()

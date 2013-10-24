@@ -33,7 +33,8 @@ class RsyncDestination(RsyncController):
     BASE_PARTIES = RsyncController.BASE_PARTIES + ['dests']
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, rsyncport=873, netcat=False):  # root default rsyncport: 873
+                 auth_data=None, rsyncpath=None, rsyncport=873,  # root default rsyncport: 873
+                 netcat=False, domain=None):
 
         kwargs = {
             'hosts'       : hosts,
@@ -47,9 +48,9 @@ class RsyncDestination(RsyncController):
         super(RsyncDestination, self).__init__(**kwargs)
 
         host = socket.getfqdn()
-        if host.endswith('.os'):  # Temporary fix for vsc
-            tmp = host.rsplit('.os', 1)
-            host = '.gent.vsc'.join(tmp)
+        if domain:
+            hname = host.split('.', 1)
+            host = '%s.%s' % (hname[0], domain)
         self.daemon_host = host
         self.daemon_port = rsyncport  # Default
 
@@ -66,7 +67,7 @@ class RsyncDestination(RsyncController):
 
     def run_rsync(self):
         """ Runs the rsync command """
-        # TODO: path in rsync module?
+        # TODO: config genereren
         return self.run_with_watch('rsync --daemon --no-detach --port %s' % self.daemon_port)
 
     def run_netcat(self):

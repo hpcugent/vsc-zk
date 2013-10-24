@@ -24,7 +24,7 @@ zk.rsync source
 from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
 from vsc.utils.run import RunAsyncLoopLog
-from vsc.zk.depthwalk import get_pathlist
+from vsc.zk.depthwalk import get_pathlist, encode_paths, decode_path
 from vsc.zk.rsync.controller import RsyncController
 
 class RsyncSource(RsyncController):
@@ -39,7 +39,8 @@ class RsyncSource(RsyncController):
     WAITTIME = 5  # check interval of closure of other clients
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, rsyncdepth=-1, netcat=False):
+                 auth_data=None, rsyncpath=None, rsyncdepth=-1,
+                 netcat=False, dryrun=False, delete=False):
 
         kwargs = {
             'hosts'       : hosts,
@@ -59,6 +60,8 @@ class RsyncSource(RsyncController):
             self.log.raiseException('Invalid rsync depth: %i' % rsyncdepth)
         else:
             self.rsyncdepth = rsyncdepth
+        self.rsync_delete = delete
+        self.rsync_dry = dryrun
 
     def get_sources(self):
         """ Get all zookeeper clients in this session registered as clients """
@@ -97,7 +100,9 @@ class RsyncSource(RsyncController):
             paths = [str(i) for i in range(5)]
             time.sleep(self.SLEEPTIME)
         else:
-            paths = get_pathlist(self.rsyncpath, self.rsyncdepth)
+            tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth)
+            paths = encode_paths(tuplpaths)
+
         self.path_queue.put_all(paths)
         self.log.debug('pathqueue building finished')
 
@@ -127,11 +132,21 @@ class RsyncSource(RsyncController):
         """ Returns the depth of the path relatively to base path """
         pass  # TODO
 
-    def run_rsync(self, path, host, port):
-        """ Runs the rsync command """
-        # Start rsync recursive or non recursive;
-        self.log.debug('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))  # TODO
-        return RunAsyncLoopLog.run('rsync -n --progress %s rsync://%s:%s ' % (path, host, port))
+    def run_rsync(self, encpath, host, port):
+        """ Runs the rsync command with or without recursion """
+        path, recursive = decode_path(encpath)
+        if not path.startswith(self.rsyncpath):
+            self.log.raiseException('Invalid path! %s is not a subpath of %s!' % (path, self.rsyncpath))
+        # Start rsync recursive or non recursive; archive mode (a) is equivalent to  -rlptgoD (see man rsync)
+        flags = "-n --progress --stats -lptgoD"
+        if recursive:
+            flags = '%s -r' % flags
+        if self.rsync_delete:
+            flags = '%s --delete' % flags
+        if self.rsync_dry:
+            flags = '%s -n' % flags
+        self.log.debug('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))
+        return RunAsyncLoopLog.run('rsync %s %s rsync://%s:%s ' % (flags, path, host, port))
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
@@ -144,16 +159,12 @@ class RsyncSource(RsyncController):
             self.log.raiseException('Empty path given!')
         elif not isinstance(path, basestring):
             self.log.raiseException('Invalid path: %s !' % path)
-        elif not self.netcat and not path.startswith(self.rsyncpath):
-            self.log.raiseException('Invalid path! %s is not a subpath of %s!' % (path, self.rsyncpath))
         else:
             host, port = tuple(destination.split(':'))
             if self.netcat:
                 code, output = self.run_netcat(path, host, port)
             else:
                 code, output = self.run_rsync(path, host, port)
-            self.log.debug('path %s was sent to %s:%s' % (path, host, port))
-            # If connection to daemon fails, consume it?
             # TODO: add output to output queue
             return (code == 0)
 

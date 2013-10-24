@@ -25,22 +25,59 @@ from vsc.utils import fancylogger
 logger = fancylogger.getLogger()
 
 def depthwalk(path, depth=1):
+    """ 
+    Does an os.walk but goes only as deep as the depth parameter. Depth has to be greater or equal to 1
+    Code is taken from
+    http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+    """
     path = path.rstrip(os.path.sep)
+    assert depth > 0
     assert os.path.isdir(path)
-    pathslashcount = path.count(os.path.sep)
+    pathdepth = path.count(os.path.sep)
     for root, dirs, files in os.walk(path):
         yield root, dirs, files
-        slashcount = root.count(os.path.sep)
-        if pathslashcount + depth <= slashcount:
+        subpathdepth = root.count(os.path.sep)
+        if pathdepth + depth - 1 <= subpathdepth:
             del dirs[:]
 
 def get_pathlist(path, depth):
-    pathlist = [path]
+    """
+    Returns a list of (path, recursive) tuples under path with the maximum depth specified.
+    Depth 0 is the basepath itself. 
+    Recursive is True if and only if it is exactly on the depth specified.
+    """
+    path = path.rstrip(os.path.sep)
+    if depth == 0:
+        return [(path, 1)]
+    pathlist = [(path, 0)]
+    pathdepth = path.count(os.path.sep)
     for root, dirs, files in depthwalk(path, depth):
         for name in dirs:
-            pathlist.append(os.path.join(root, name))
+            subpath = os.path.join(root, name)
+            subpathdepth = subpath.count(os.path.sep)
+            if pathdepth + depth == subpathdepth:
+                recursive = 1
+            else:
+                recursive = 0
+            pathlist.append((subpath, recursive))
     logger.debug("pathlist is %s" % pathlist)
     return pathlist
 
+def encode_paths(pathlist):
+    enclist = []
+    for (path, rec) in pathlist:
+        enclist.append("%i_%s" % (rec, path))
+    logger.debug("encoded list is %s" % enclist)
+    return enclist
+
+def decode_path(encpath):
+    pathl = encpath.split('_', 1)
+    return (pathl[1], int(pathl[0]))
+
 if __name__ == '__main__':  # for testing purposes
-    get_pathlist('/tmp/test', depth=2)
+    list = get_pathlist('/tmp/test', depth=3)
+    enclist = encode_paths(list)
+    print list
+    print enclist
+    for l in enclist:
+        print decode_path(l)

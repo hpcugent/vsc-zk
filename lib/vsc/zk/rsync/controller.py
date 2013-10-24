@@ -19,7 +19,8 @@ zk.rsync controller
 @author: Stijn De Weirdt (Ghent University)
 @author: Kenneth Waegeman (Ghent University)
 """
-import sys, os
+import os
+import sys
 
 from kazoo.recipe.queue import LockingQueue
 from vsc.zk.base import VscKazooClient
@@ -47,11 +48,11 @@ class RsyncController(VscKazooClient):
 
         super(RsyncController, self).__init__(**kwargs)
 
-        if not netcat and not os.path.isdir(rsyncpath):
-            self.log.raiseException('Path does not exists in filesystem: %s' % rsyncpath)
-        else:
-            self.rsyncpath = rsyncpath
+        if not netcat:
+            if not os.path.isdir(rsyncpath):
+                self.log.raiseException('Path does not exists in filesystem: %s' % rsyncpath)
 
+        self.rsyncpath = rsyncpath
         self.dest_queue = LockingQueue(self, self.znode_path(self.session + '/destQueue'))
 
     def get_all_hosts(self):
