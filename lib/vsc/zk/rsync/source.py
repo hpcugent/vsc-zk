@@ -59,6 +59,8 @@ class RsyncSource(RsyncController):
         self.lockpath = self.znode_path(self.session + '/lock')
         self.lock = None
         self.path_queue = LockingQueue(self, self.znode_path(self.session + '/pathQueue'))
+        self.failed_queue = LockingQueue(self, self.znode_path(self.session + '/failedQueue'))
+        self.output_queue = LockingQueue(self, self.znode_path(self.session + '/outputQueue'))
         if rsyncdepth < 0:
             self.log.raiseException('Invalid rsync depth: %i' % rsyncdepth)
         else:
@@ -105,8 +107,8 @@ class RsyncSource(RsyncController):
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth)
             paths = encode_paths(tuplpaths)
-
-        self.path_queue.put_all(paths)
+        for path in paths:
+            self.path_queue.put(path)  # Put_all can issue a zookeeper connection error with big lists
         self.log.debug('pathqueue building finished')
 
     def isempty_pathqueue(self):
@@ -128,6 +130,17 @@ class RsyncSource(RsyncController):
         """ Remove all session nodes in zookeeper """
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.path_queue.path, recursive=True)
+
+        while (len(self.failed_queue) > 0):
+            self.log.error('Failed Path %s' % self.failed_queue.get())
+            self.failed_queue.consume()
+
+        while (len(self.output_queue) > 0):
+            self.log.info(self.output_queue.get())  # TODO: to log file
+            self.output_queue.consume()
+
+        self.delete(self.failed_queue.path, recursive=True)
+        self.delete(self.output_queue.path, recursive=True)
         self.remove_ready_watch()
         self.release_lock()
         self.log.debug('Lock, Queues and watch removed')
@@ -156,7 +169,7 @@ class RsyncSource(RsyncController):
         path, recursive = decode_path(encpath)
         file = self.generate_file(path)
         # Start rsync recursive or non recursive; archive mode (a) is equivalent to  -rlptgoD (see man rsync)
-        flags = ['--progress', ' --stats', '-lptgoD', '--files-from=%s' % file]
+        flags = ['--progress', '--stats', '--numeric-ids', '-lptgoD', '--files-from=%s' % file]
         if recursive:
             flags.append('-r')
         if self.rsync_delete:
@@ -164,8 +177,17 @@ class RsyncSource(RsyncController):
         if self.rsync_dry:
             flags.append('-n')
         self.log.debug('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))
-        return RunAsyncLoopLog.run('rsync %s %s/ rsync://%s:%s/%s'
+        attempt = 1
+        while (attempt <= 3):
+            code, output = RunAsyncLoopLog.run('rsync %s %s/ rsync://%s:%s/%s'
                                    % (' '.join(flags), self.rsyncpath, host, port, self.module))
+            if code == 0:
+                return code, output
+            else:
+                attempt += 1
+        self.log.error('There were issues with path %s!' % path)
+        self.failed_queue.put(encpath)
+        return 0, output  # otherwise client get stuck
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
@@ -184,7 +206,7 @@ class RsyncSource(RsyncController):
                 code, output = self.run_netcat(path, host, port)
             else:
                 code, output = self.run_rsync(path, host, port)
-            # TODO: add output to output queue
+            # self.output_queue.put(output) got connection lost TODO
             return (code == 0)
 
     def rsync(self, timeout=None):

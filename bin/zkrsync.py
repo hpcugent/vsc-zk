@@ -77,6 +77,7 @@ def main():
         'netcat'      : ('run netcat test instead of rsync', None, 'store_true', False),
         'dryrun'      : ('run rsync in dry run mode', None, 'store_true', False, 'n'),
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
+        'pathsonly'   : ('Do a test run of the pathlist building', None, 'store_true', False),
     }
 
     go = simple_option(options)
@@ -90,7 +91,27 @@ def main():
         'netcat'      : go.options.netcat,
         }
 
-    if type == "destination":
+    if go.options.pathsonly:
+        kwargs['rsyncdepth'] = go.options.depth
+        rsyncP = RsyncSource(go.options.servers, **kwargs)
+        locked = rsyncP.acq_lock()
+        if locked:
+            starttime = time.time()
+            rsyncP.build_pathqueue()
+            endtime = time.time()
+            timing = endtime - starttime
+            pathqueue = rsyncP.path_queue
+            logger.info('Building with depth %i took %f seconds walltime. there are %i paths in the Queue'
+                         % (go.options.depth, timing, len(pathqueue)))
+            rsyncP.delete(pathqueue.path, recursive=True)
+            rsyncP.release_lock()
+        else:
+            logger.error('There is already a lock on the pathtree of this session')
+
+        rsyncP.exit()
+        sys.exit(0)
+
+    elif type == "destination":
         # Start zookeeper connection and rsync daemon
         kwargs['rsyncport'] = go.options.rsyncport
         kwargs['domain'] = go.options.domain
