@@ -19,7 +19,7 @@ vsc-zk base distribution setup.py
 @author: Stijn De Weirdt (Ghent University)
 """
 import vsc.install.shared_setup as shared_setup
-from vsc.install.shared_setup import ag, sdw
+from vsc.install.shared_setup import ag, kw, sdw
 
 
 def remove_bdist_rpm_source_file():
@@ -37,7 +37,7 @@ PACKAGE = {
     'name': 'vsc-zk',
     'version': '0.5.6',
     'author': [sdw],
-    'maintainer': [sdw, ag],
+    'maintainer': [sdw, kw],
     'packages': ['vsc', 'vsc.zk', 'vsc.zk.rsync'],
     'namespace_packages': ['vsc'],
     'scripts': [

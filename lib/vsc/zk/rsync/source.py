@@ -169,7 +169,7 @@ class RsyncSource(RsyncController):
         path, recursive = decode_path(encpath)
         file = self.generate_file(path)
         # Start rsync recursive or non recursive; archive mode (a) is equivalent to  -rlptgoD (see man rsync)
-        flags = ['--progress', '--stats', '--numeric-ids', '-lptgoD', '--files-from=%s' % file]
+        flags = ['--stats', '--numeric-ids', '-lptgoD', '--files-from=%s' % file]
         if recursive:
             flags.append('-r')
         if self.rsync_delete:
