@@ -59,6 +59,7 @@ class RsyncSource(RsyncController):
         self.lockpath = self.znode_path(self.session + '/lock')
         self.lock = None
         self.path_queue = LockingQueue(self, self.znode_path(self.session + '/pathQueue'))
+        self.completed_queue = LockingQueue(self, self.znode_path(self.session + '/completedQueue'))
         self.failed_queue = LockingQueue(self, self.znode_path(self.session + '/failedQueue'))
         self.output_queue = LockingQueue(self, self.znode_path(self.session + '/outputQueue'))
         if rsyncdepth < 0:
@@ -110,10 +111,16 @@ class RsyncSource(RsyncController):
         for path in paths:
             self.path_queue.put(path)  # Put_all can issue a zookeeper connection error with big lists
         self.log.debug('pathqueue building finished')
+        self.paths_total = len(self.path_queue)
+        return self.paths_total
 
     def isempty_pathqueue(self):
         """ Returns true if all paths in pathqueue are done """
         return len(self.path_queue) == 0
+
+    def len_paths(self):
+        """ Returns how many elements still in pathQueue """
+        return len(self.path_queue)
 
     def shutdown_all(self):
         """ Send end signal and release lock 
@@ -135,10 +142,15 @@ class RsyncSource(RsyncController):
             self.log.error('Failed Path %s' % self.failed_queue.get())
             self.failed_queue.consume()
 
+        while (len(self.completed_queue) > 0):
+            self.log.info(self.completed_queue.get())
+            self.completed_queue.consume()
+
         while (len(self.output_queue) > 0):
-            self.log.info(self.output_queue.get())  # TODO: to log file
+            self.log.info(self.output_queue.get())
             self.output_queue.consume()
 
+        self.delete(self.completed_queue.path, recursive=True)
         self.delete(self.failed_queue.path, recursive=True)
         self.delete(self.output_queue.path, recursive=True)
         self.remove_ready_watch()
@@ -161,6 +173,20 @@ class RsyncSource(RsyncController):
             file.write('%s/' % subpath)
             return name
 
+    def attempt_run(self, command, queue_path, attempts=3):
+        """ Try to run a command x times, on failure add to failed queue """
+        attempt = 1
+        while (attempt <= attempts):
+            code, output = RunAsyncLoopLog.run(command)
+            if code == 0:
+                self.completed_queue.put(queue_path)
+                return code, output
+            else:
+                attempt += 1
+        self.log.error('There were issues with path %s!' % queue_path)
+        self.failed_queue.put(queue_path)
+        return 0, output  # otherwise client get stuck
+
     def run_rsync(self, encpath, host, port):
         """
         Runs the rsync command with or without recursion, delete or dry-run option.
@@ -177,22 +203,17 @@ class RsyncSource(RsyncController):
         if self.rsync_dry:
             flags.append('-n')
         self.log.debug('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))
-        attempt = 1
-        while (attempt <= 3):
-            code, output = RunAsyncLoopLog.run('rsync %s %s/ rsync://%s:%s/%s'
-                                   % (' '.join(flags), self.rsyncpath, host, port, self.module))
-            if code == 0:
-                return code, output
-            else:
-                attempt += 1
-        self.log.error('There were issues with path %s!' % path)
-        self.failed_queue.put(encpath)
-        return 0, output  # otherwise client get stuck
+
+        command = 'rsync %s %s/ rsync://%s:%s/%s' % (' '.join(flags), self.rsyncpath,
+                                                     host, port, self.module)
+        return self.attempt_run(command, encpath)
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
         time.sleep(self.SLEEPTIME)
-        return RunAsyncLoopLog.run('echo %s is sending %s | nc %s %s' % (self.whoami, path, host, port))
+        command = 'echo %s is sending %s | nc %s %s' % (self.whoami, path, host, port)
+
+        return self.attempt_run(command, path)
 
     def rsync_path(self, path, destination):
         """ start rsync session for given path and destination, returns true if successful """
@@ -206,7 +227,7 @@ class RsyncSource(RsyncController):
                 code, output = self.run_netcat(path, host, port)
             else:
                 code, output = self.run_rsync(path, host, port)
-            # self.output_queue.put(output) got connection lost TODO
+            self.output_queue.put(output)
             return (code == 0)
 
     def get_a_dest(self, timeout):
