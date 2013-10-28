@@ -103,7 +103,7 @@ class RsyncSource(RsyncController):
         if self.exists(self.path_queue.path):
             self.delete(self.path_queue.path, recursive=True)
         if self.netcat:
-            paths = [str(i) for i in range(2)]
+            paths = [str(i) for i in range(5)]
             time.sleep(self.SLEEPTIME)
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth)
