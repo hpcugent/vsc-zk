@@ -143,9 +143,10 @@ class RsyncSource(RsyncController):
             self.failed_queue.consume()
 
         while (len(self.completed_queue) > 0):
-            self.log.info(self.completed_queue.get())
+            self.log.info('Completed Path %s' % self.completed_queue.get())
             self.completed_queue.consume()
 
+        self.log.info('Output:')
         while (len(self.output_queue) > 0):
             self.log.info(self.output_queue.get())
             self.output_queue.consume()
