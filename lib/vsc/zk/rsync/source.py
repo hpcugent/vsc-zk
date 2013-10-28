@@ -102,7 +102,7 @@ class RsyncSource(RsyncController):
         if self.exists(self.path_queue.path):
             self.delete(self.path_queue.path, recursive=True)
         if self.netcat:
-            paths = [str(i) for i in range(5)]
+            paths = [str(i) for i in range(2)]
             time.sleep(self.SLEEPTIME)
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth)
@@ -201,7 +201,7 @@ class RsyncSource(RsyncController):
         elif not isinstance(path, basestring):
             self.log.raiseException('Invalid path: %s !' % path)
         else:
-            host, port = tuple(destination.split(':'))
+            host, port, pid = tuple(destination.split(':'))
             if self.netcat:
                 code, output = self.run_netcat(path, host, port)
             else:
@@ -209,15 +209,26 @@ class RsyncSource(RsyncController):
             # self.output_queue.put(output) got connection lost TODO
             return (code == 0)
 
-    def rsync(self, timeout=None):
+    def get_a_dest(self, timeout):
+        """ 
+        Try to get a destination.
+        check if destination is still running, otherwise remove
+        """
         if len(self.dest_queue) == 0:
             self.log.debug('Destinations not yet available')
-        dest = self.dest_queue.get(timeout)  # Keeps it if not consuming
+        dest = self.dest_queue.get(timeout)
+        if dest and not self.member_of_party(dest, 'allsd'):
+            self.log.debug('destination is not found in party')
+            self.dest_queue.consume()
+            return None
+        else:
+            return dest
+
+    def rsync(self, timeout=None):
+        """ Get a destination, a path and call a new rsync iteration """
+        dest = self.get_a_dest(timeout)  # Keeps it if not consuming
         if dest:  # We locked a rsync daemon
             path = self.path_queue.get(timeout)
             if path and self.dest_queue.holds_lock():  # Nothing wrong happened in timeout
                 if self.rsync_path(path, dest):
                     self.path_queue.consume()
-                    # If connection to daemon fails, consume it?
-
-

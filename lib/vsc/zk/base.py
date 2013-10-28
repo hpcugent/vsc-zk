@@ -94,6 +94,9 @@ class VscKazooClient(KazooClient):
         self.log.debug("get_whoami: %s" % res)
         return res
 
+    def member_of_party(self, dest, party):
+        return dest in self.parties[party]
+
     def join_parties(self, parties=None):
         """List of parties, join them all"""
         if parties is None or not parties:

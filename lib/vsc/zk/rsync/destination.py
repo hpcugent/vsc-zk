@@ -48,14 +48,25 @@ class RsyncDestination(RsyncController):
             'rsyncpath'   : rsyncpath,
             'netcat'      : netcat,
         }
-        super(RsyncDestination, self).__init__(**kwargs)
 
         host = socket.getfqdn()
         if domain:
             hname = host.split('.', 1)
             host = '%s.%s' % (hname[0], domain)
         self.daemon_host = host
-        self.daemon_port = rsyncport  # Default
+        self.daemon_port = rsyncport
+
+        super(RsyncDestination, self).__init__(**kwargs)
+
+    def get_whoami(self, name=None):  # Override base method
+        """Create a unique name for this client"""
+        data = [self.daemon_host, str(self.daemon_port), str(os.getpid())]
+        if name:
+            data.append(name)
+
+        res = ':'.join(data)
+        self.log.debug("get_whoami: %s" % res)
+        return res
 
     def get_destss(self):
         """ Get all zookeeper clients in this session registered as destinations"""
@@ -95,7 +106,7 @@ class RsyncDestination(RsyncController):
         """Starts rsync daemon and add to the queue"""
         self.ready_with_stop_watch()
         # Add myself to dest_queue
-        self.dest_queue.put(self.daemon_info())
+        self.dest_queue.put(self.whoami)
         if self.netcat:
             self.run_netcat()
         else:
