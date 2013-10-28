@@ -89,7 +89,6 @@ def main():
         fancylogger.logToFile(go.options.logfile)
         logger.debug('Logging to file %s:' % go.options.logfile)
 
-
     kwargs = {
         'session'     : go.options.session,
         'default_acl' : [admin_acl],
