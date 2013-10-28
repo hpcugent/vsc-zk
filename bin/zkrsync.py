@@ -78,10 +78,17 @@ def main():
         'dryrun'      : ('run rsync in dry run mode', None, 'store_true', False, 'n'),
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
         'pathsonly'   : ('Do a test run of the pathlist building', None, 'store_true', False),
+        'logfile'     : ('Output to logfile', None, 'store', None),
+        'state'       : ('Show only the state', None, 'store_true', False),
     }
 
     go = simple_option(options)
     acreds, admin_acl, type = zkrsync_parse(go.options)
+
+    if go.options.logfile:
+        fancylogger.logToFile(go.options.logfile)
+        logger.debug('Logging to file %s:' % go.options.logfile)
+
 
     kwargs = {
         'session'     : go.options.session,
@@ -90,8 +97,13 @@ def main():
         'rsyncpath'   : go.options.rsyncpath,
         'netcat'      : go.options.netcat,
         }
+    if go.options.state:
+        rsyncP = RsyncSource(go.options.servers, **kwargs)
+        logger.info('There are still %s of %s paths to do' % (rsyncP.len_paths(), rsyncP.paths_total))
+        rsyncP.exit()
+        sys.exit(0)
 
-    if go.options.pathsonly:
+    elif go.options.pathsonly:
         kwargs['rsyncdepth'] = go.options.depth
         rsyncP = RsyncSource(go.options.servers, **kwargs)
         locked = rsyncP.acq_lock()
@@ -136,8 +148,12 @@ def main():
             watchnode = rsyncS.start_ready_rwatch()
             if not watchnode:
                 sys.exit(1)
-            rsyncS.build_pathqueue()
+            paths_total = rsyncS.build_pathqueue()
+            todo_paths = paths_total
             while not rsyncS.isempty_pathqueue():
+                if todo_paths != rsyncS.len_paths():  # Output progress state
+                    todo_paths = rsyncS.len_paths()
+                    logger.info('There are still %s of %s paths to do' % (todo_paths, paths_total))
                 time.sleep(SLEEP_TIME)
             rsyncS.shutdown_all()
             rsyncS.exit()
