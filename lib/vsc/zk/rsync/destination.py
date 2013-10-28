@@ -14,7 +14,7 @@
 #
 #
 """
-zk.rsync server
+zk.rsync destination
 
 @author: Stijn De Weirdt (Ghent University)
 @author: Kenneth Waegeman (Ghent University)
