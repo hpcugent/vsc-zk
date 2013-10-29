@@ -207,7 +207,9 @@ class RsyncSource(RsyncController):
 
         command = 'rsync %s %s/ rsync://%s:%s/%s' % (' '.join(flags), self.rsyncpath,
                                                      host, port, self.module)
-        return self.attempt_run(command, encpath)
+        code, output = self.attempt_run(command, encpath)
+        os.remove(file)
+        return code, output
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """

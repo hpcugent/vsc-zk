@@ -95,8 +95,10 @@ class RsyncDestination(RsyncController):
     def run_rsync(self):
         """ Runs the rsync command """
         config = self.generate_daemon_config()
-        return self.run_with_watch('rsync --daemon --no-detach --config=%s --port %s'
+        code, output = self.run_with_watch('rsync --daemon --no-detach --config=%s --port %s'
                                    % (config, self.daemon_port))
+        os.remove(config)
+        return code, output
 
     def run_netcat(self):
         """ Test run with netcat """
