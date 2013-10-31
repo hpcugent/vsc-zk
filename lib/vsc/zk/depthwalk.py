@@ -54,6 +54,8 @@ def get_pathlist(path, depth):
     for root, dirs, files in depthwalk(path, depth):
         for name in dirs:
             subpath = os.path.join(root, name)
+            if os.path.islink(subpath):  # Don't return symlinks to directories
+                continue
             subpathdepth = subpath.count(os.path.sep)
             if pathdepth + depth == subpathdepth:
                 recursive = 1
@@ -73,3 +75,11 @@ def encode_paths(pathlist):
 def decode_path(encpath):
     pathl = encpath.split('_', 1)
     return (pathl[1], int(pathl[0]))
+
+if __name__ == '__main__':  # for testing purposes
+    list = get_pathlist('/tmp/test', depth=3)
+    enclist = encode_paths(list)
+    print list
+    print enclist
+    for l in enclist:
+        print decode_path(l)
