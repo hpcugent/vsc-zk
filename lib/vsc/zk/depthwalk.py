@@ -97,3 +97,6 @@ def encode_paths(pathlist):
     logger.debug("encoded list is %s" % enclist)
     return enclist
 
+def decode_path(encpath):
+    pathl = encpath.split('_', 1)
+    return (pathl[1], int(pathl[0]))
