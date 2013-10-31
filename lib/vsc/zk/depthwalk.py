@@ -20,6 +20,9 @@ vsc-zk depthwalk
 """
 
 import os
+import re
+
+from pwd import getpwnam
 from vsc.utils import fancylogger
 
 logger = fancylogger.getLogger()
@@ -40,22 +43,44 @@ def depthwalk(path, depth=1):
         if pathdepth + depth - 1 <= subpathdepth:
             del dirs[:]
 
-def get_pathlist(path, depth):
+def exclude_path(path, exclude_re, ex_uid):
+        if exclude_re:
+            regfound = re.search(exclude_re, path)
+            if regfound and ex_uid is not None:
+                return os.stat(path).st_uid == ex_uid
+            else:
+                return regfound
+        return False
+
+def get_pathlist(path, depth, exclude_re=None, exclude_usr=None):
     """
     Returns a list of (path, recursive) tuples under path with the maximum depth specified.
     Depth 0 is the basepath itself. 
     Recursive is True if and only if it is exactly on the depth specified.
+    Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders) 
     """
+    if exclude_usr:
+        ex_uid = getpwnam(exclude_usr).pw_uid
+
     path = path.rstrip(os.path.sep)
     if depth == 0:
         return [(path, 1)]
     pathlist = [(path, 0)]
     pathdepth = path.count(os.path.sep)
     for root, dirs, files in depthwalk(path, depth):
+        if exclude_path(root, exclude_re, ex_uid):
+            logger.debug('excluding path %s' % root)
+            del dirs[:]
+            continue
         for name in dirs:
             subpath = os.path.join(root, name)
             if os.path.islink(subpath):  # Don't return symlinks to directories
+                logger.debug('directory symlink not added %s' % subpath)
                 continue
+            if exclude_path(subpath, exclude_re, ex_uid):
+                logger.debug('excluding path %s' % subpath)
+                continue
+
             subpathdepth = subpath.count(os.path.sep)
             if pathdepth + depth == subpathdepth:
                 recursive = 1
@@ -75,3 +100,11 @@ def encode_paths(pathlist):
 def decode_path(encpath):
     pathl = encpath.split('_', 1)
     return (pathl[1], int(pathl[0]))
+
+if __name__ == '__main__':  # for testing purposes
+    list = get_pathlist('/tmp/test', depth=3, exclude_re='.*/.snapshots(/.*|$)', exclude_usr='root')
+    enclist = encode_paths(list)
+    print list
+    print enclist
+    for l in enclist:
+        print decode_path(l)

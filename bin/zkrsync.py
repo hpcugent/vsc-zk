@@ -80,6 +80,7 @@ def main():
         'pathsonly'   : ('Do a test run of the pathlist building', None, 'store_true', False),
         'logfile'     : ('Output to logfile', None, 'store', None),
         'state'       : ('Show only the state', None, 'store_true', False),
+        'excludere'   : ('Exclude from pathbuilding', None, 'store', '.*/.snapshots(/.*|$)'),
     }
 
     go = simple_option(options)
@@ -104,6 +105,7 @@ def main():
 
     elif go.options.pathsonly:
         kwargs['rsyncdepth'] = go.options.depth
+        kwargs['excludere'] = go.options.excludere
         rsyncP = RsyncSource(go.options.servers, **kwargs)
         locked = rsyncP.acq_lock()
         if locked:
@@ -138,6 +140,7 @@ def main():
         kwargs['rsyncdepth'] = go.options.depth
         kwargs['dryrun'] = go.options.dryrun
         kwargs['delete'] = go.options.delete
+        kwargs['excludere'] = go.options.excludere
         rsyncS = RsyncSource(go.options.servers, **kwargs)
         # Try to retrieve session lock
         locked = rsyncS.acq_lock()

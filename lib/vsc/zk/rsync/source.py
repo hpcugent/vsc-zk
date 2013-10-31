@@ -43,7 +43,7 @@ class RsyncSource(RsyncController):
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncdepth=-1,
-                 netcat=False, dryrun=False, delete=False):
+                 netcat=False, dryrun=False, delete=False, excludere=None):
 
         kwargs = {
             'hosts'       : hosts,
@@ -68,6 +68,7 @@ class RsyncSource(RsyncController):
             self.rsyncdepth = rsyncdepth
         self.rsync_delete = delete
         self.rsync_dry = dryrun
+        self.excludere = excludere
 
     def get_sources(self):
         """ Get all zookeeper clients in this session registered as clients """
@@ -106,12 +107,13 @@ class RsyncSource(RsyncController):
             paths = [str(i) for i in range(5)]
             time.sleep(self.SLEEPTIME)
         else:
-            tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth)
+            tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth,
+                                     exclude_re=self.excludere, exclude_usr='root')  # Don't exclude user files
             paths = encode_paths(tuplpaths)
+        self.paths_total = len(paths)
         for path in paths:
             self.path_queue.put(path)  # Put_all can issue a zookeeper connection error with big lists
         self.log.debug('pathqueue building finished')
-        self.paths_total = len(self.path_queue)
         return self.paths_total
 
     def isempty_pathqueue(self):
