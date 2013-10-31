@@ -108,7 +108,8 @@ class RsyncSource(RsyncController):
             time.sleep(self.SLEEPTIME)
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth,
-                                     exclude_re=self.excludere, exclude_usr='root')  # Don't exclude user files
+                                     exclude_re=self.excludere, exclude_usr='root')
+                                                        # Don't exclude user files
             paths = encode_paths(tuplpaths)
         self.paths_total = len(paths)
         for path in paths:
