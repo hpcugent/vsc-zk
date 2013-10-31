@@ -97,14 +97,3 @@ def encode_paths(pathlist):
     logger.debug("encoded list is %s" % enclist)
     return enclist
 
-def decode_path(encpath):
-    pathl = encpath.split('_', 1)
-    return (pathl[1], int(pathl[0]))
-
-if __name__ == '__main__':  # for testing purposes
-    list = get_pathlist('/tmp/test', depth=3, exclude_re='.*/.snapshots(/.*|$)', exclude_usr='root')
-    enclist = encode_paths(list)
-    print list
-    print enclist
-    for l in enclist:
-        print decode_path(l)
