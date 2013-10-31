@@ -20,6 +20,9 @@ vsc-zk depthwalk
 """
 
 import os
+import re
+
+from pwd import getpwnam
 from vsc.utils import fancylogger
 
 logger = fancylogger.getLogger()
@@ -40,12 +43,25 @@ def depthwalk(path, depth=1):
         if pathdepth + depth - 1 <= subpathdepth:
             del dirs[:]
 
-def get_pathlist(path, depth):
+def exclude_path(path, exclude_re, ex_uid):
+        if exclude_re:
+            regfound = re.search(exclude_re, path)  # check regex
+            if regfound and ex_uid is not None:
+                return os.stat(path).st_uid == ex_uid
+            else:
+                return regfound
+        return False
+
+def get_pathlist(path, depth, exclude_re=None, exclude_usr=None):
     """
     Returns a list of (path, recursive) tuples under path with the maximum depth specified.
     Depth 0 is the basepath itself. 
     Recursive is True if and only if it is exactly on the depth specified.
+    Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders) 
     """
+    if exclude_usr:
+        ex_uid = getpwnam(exclude_usr).pw_uid
+
     path = path.rstrip(os.path.sep)
     if depth == 0:
         return [(path, 1)]
@@ -54,6 +70,8 @@ def get_pathlist(path, depth):
     for root, dirs, files in depthwalk(path, depth):
         for name in dirs:
             subpath = os.path.join(root, name)
+            if exclude_path(path, exclude_re, ex_uid):
+                continue
             subpathdepth = subpath.count(os.path.sep)
             if pathdepth + depth == subpathdepth:
                 recursive = 1
