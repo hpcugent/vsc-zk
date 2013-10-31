@@ -87,7 +87,6 @@ def main():
     go = simple_option(options)
     acreds, admin_acl, type = zkrsync_parse(go.options)
 
-    logger.debug('regex is %s:' % go.options.excludere)
     if go.options.logfile:
         fancylogger.logToFile(go.options.logfile)
         logger.debug('Logging to file %s:' % go.options.logfile)
