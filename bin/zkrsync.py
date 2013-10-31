@@ -19,6 +19,7 @@ vsc-zk zkrsync
 @author: Kenneth Waegeman (Ghent University)
 """
 
+import re
 import sys
 import time
 
@@ -80,12 +81,13 @@ def main():
         'pathsonly'   : ('Do a test run of the pathlist building', None, 'store_true', False),
         'logfile'     : ('Output to logfile', None, 'store', None),
         'state'       : ('Show only the state', None, 'store_true', False),
-        'excludere'   : ('Exclude from pathbuilding', None, 'store', '.*/.snapshots(/.*|$)'),
+        'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
     }
 
     go = simple_option(options)
     acreds, admin_acl, type = zkrsync_parse(go.options)
 
+    logger.debug('regex is %s:' % go.options.excludere)
     if go.options.logfile:
         fancylogger.logToFile(go.options.logfile)
         logger.debug('Logging to file %s:' % go.options.logfile)

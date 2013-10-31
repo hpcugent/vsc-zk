@@ -44,8 +44,9 @@ def depthwalk(path, depth=1):
             del dirs[:]
 
 def exclude_path(path, exclude_re, ex_uid):
+        """Exclude a path if it matches exclude_re and is owned by ex_uid"""
         if exclude_re:
-            regfound = re.search(exclude_re, path)
+            regfound = exclude_re.search(path)
             if regfound and ex_uid is not None:
                 return os.stat(path).st_uid == ex_uid
             else:
