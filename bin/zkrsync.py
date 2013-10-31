@@ -105,6 +105,7 @@ def main():
 
     elif go.options.pathsonly:
         kwargs['rsyncdepth'] = go.options.depth
+        kwargs['excludere'] = go.options.excludere
         rsyncP = RsyncSource(go.options.servers, **kwargs)
         locked = rsyncP.acq_lock()
         if locked:
@@ -139,7 +140,7 @@ def main():
         kwargs['rsyncdepth'] = go.options.depth
         kwargs['dryrun'] = go.options.dryrun
         kwargs['delete'] = go.options.delete
-        kwargs['excluderdir'] = go.options.excluderdir
+        kwargs['excludere'] = go.options.excludere
         rsyncS = RsyncSource(go.options.servers, **kwargs)
         # Try to retrieve session lock
         locked = rsyncS.acq_lock()

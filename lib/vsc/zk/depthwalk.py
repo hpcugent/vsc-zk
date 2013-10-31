@@ -45,7 +45,7 @@ def depthwalk(path, depth=1):
 
 def exclude_path(path, exclude_re, ex_uid):
         if exclude_re:
-            regfound = re.search(exclude_re, path)  # check regex
+            regfound = re.search(exclude_re, path)
             if regfound and ex_uid is not None:
                 return os.stat(path).st_uid == ex_uid
             else:
@@ -68,9 +68,14 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None):
     pathlist = [(path, 0)]
     pathdepth = path.count(os.path.sep)
     for root, dirs, files in depthwalk(path, depth):
+        if exclude_path(root, exclude_re, ex_uid):
+            logger.debug('excluding path %s' % root)
+            del dirs[:]
+            continue
         for name in dirs:
             subpath = os.path.join(root, name)
-            if exclude_path(path, exclude_re, ex_uid):
+            if exclude_path(subpath, exclude_re, ex_uid):
+                logger.debug('excluding path %s' % subpath)
                 continue
             subpathdepth = subpath.count(os.path.sep)
             if pathdepth + depth == subpathdepth:
@@ -91,3 +96,11 @@ def encode_paths(pathlist):
 def decode_path(encpath):
     pathl = encpath.split('_', 1)
     return (pathl[1], int(pathl[0]))
+
+if __name__ == '__main__':  # for testing purposes
+    list = get_pathlist('/tmp/test', depth=3, exclude_re='.*/.snapshots(/.*|$)', exclude_usr='root')
+    enclist = encode_paths(list)
+    print list
+    print enclist
+    for l in enclist:
+        print decode_path(l)
