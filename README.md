@@ -25,11 +25,9 @@ A zookeeper server with proper ACLs to a base znode (zookeeper node) is required
 If no such server is available, installation can be performed as follows:
 ~~~~bash
     zkversion=3.4.5
-    basepath=/tmp/$USER # is not permanent
-    chmod 700 $basepath
+    basepath=`mktemp -d` # not permanent, choose other directory as desired
 
     mkdir -p $basepath/zk/server/data
-
     cd $basepath/zk/server
     # use another mirror if needed
     wget http://apache.belnet.be/zookeeper/zookeeper-$zkversion/zookeeper-$zkversion.tar.gz
@@ -50,6 +48,7 @@ If no such server is available, installation can be performed as follows:
 ~~~~
 
 Start zookeeper server
+
     `./zkServer.sh start $PWD/zk.conf `
 
 
@@ -80,9 +79,9 @@ run `zkrsync -H` to see all options
 
 If anything (zookeeper related) goes wrong (no cleanup has been done)
 
- - kill all running source and destination clients ( of that session)
- - wait like 20 seconds, making sure all zookeeper connections has timed out
- - run exactly ONE Source client, if shutdown was not clean it will recognise it, clean up and exit.
+ - kill all running source and destination clients (of that session)
+ - wait about 20 seconds (ymmv), making sure all zookeeper connections have timed out
+ - run exactly one source client, if the previous shutdown was not finished cleanly, zookeeper will recognise this and attempt a new cleanup before exiting.
  - Should the previous step fail to clean up, there might still be a running client. Make sure they are all killed 
  - Start a new zkrsync process
 
