@@ -1,7 +1,7 @@
 vsc-zk
 ======
 
-# zookeeper tools
+## zookeeper tools
 
 vsc-zk contains scripts to build zookeeper trees and tools using zookeeper.
 
@@ -17,7 +17,7 @@ The implementation uses zookeeper to coordinate the distribution of collecting
 and sync the data across many processes and/or nodes.
 
 
-# Installation of Zookeeper 
+## Installation of Zookeeper 
 
 
 A zookeeper server with proper ACLs to a base znode (zookeeper node) is required.
@@ -54,7 +54,7 @@ Start zookeeper server
 
 
 
-# Build the initial zookeeper tree
+## Build the initial zookeeper tree
 
 Use zkinitree to build an initial tree in zookeeper from a config file.
 It will create paths with specified ACLs.
@@ -62,8 +62,8 @@ It will create paths with specified ACLs.
 An example config file can be found in the examples folder (zkinitree.cfg) 
 
 
-Usage of zkrsync
------------------
+## Usage of zkrsync
+
 Example usage for N-parallelised rsync :
 
 Start N+1 sources (first source client will be the Master)
