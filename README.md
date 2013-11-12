@@ -6,7 +6,7 @@ zookeeper tools
 vsc-zkrsync uses zookeeper to distribute rsync across multiple nodes 
 when rsyncing (large) (shared) filesystems.
 
-Large fraction of rsync calls is spend in agthering the required metadata, 
+Large fraction of rsync calls is spend in gathering the required metadata, 
 and then performing the actual data synchronisation. Especially when dealing 
 with "incremental" rsync. Spreading the load over multiple processes can mean 
 a significant speed increase; although other bottlenecks, eg access to the 
@@ -65,9 +65,11 @@ Usage of zkrsync
 -----------------
 Example usage for N-parallelised rsync :
 Start N+1 sources (first source client will be the Master)
+    
     zkrsync -d -S --servers <servers> -u <user> -p <pass> -r <sourcepath> --depth <depth> --session <session> --logfile <logfile>
 
 Start N destinations:
+    
     zkrsync -d -D --servers <servers> -u <user> -p <pass> -r <destpath> --depth <depth> --session <session> --logfile <logfile>
 
 Testing pathbuilding: add option --pathsonly
