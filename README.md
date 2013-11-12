@@ -64,6 +64,7 @@ An example config file can be found in examples folder (zkinitree.cfg)
 Usage of zkrsync
 -----------------
 Example usage for N-parallelised rsync :
+
 Start N+1 sources (first source client will be the Master)
     
     zkrsync -d -S --servers <servers> -u <user> -p <pass> -r <sourcepath> --depth <depth> --session <session> --logfile <logfile>
