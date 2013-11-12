@@ -67,13 +67,13 @@ def main():
     options = {
         # Zookeeper connection options:
         'servers'     : ('list of zk servers', 'strlist', 'store', None),
-        'user'        : ('user with create rights on zookeeper', None, 'store', 'root', 'u'),
-        'passwd'      : ('password for user with create rights', None, 'store', 'admin', 'p'),
+        'user'        : ('user with creation rights on zookeeper', None, 'store', 'root', 'u'),
+        'passwd'      : ('password for user with creation rights', None, 'store', 'admin', 'p'),
         # Role options, define exactly one of these:
         'source'      : ('rsync source', None, 'store_true', False, 'S'),
         'destination' : ('rsync destination', None, 'store_true', False, 'D'),
-        'pathsonly'   : ('Do only a test run of the pathlist building', None, 'store_true', False),
-        'state'       : ('Show only the state', None, 'store_true', False),
+        'pathsonly'   : ('Only do a test run of the pathlist building', None, 'store_true', False),
+        'state'       : ('Only do the state', None, 'store_true', False),
         # Session options; should be the same on all clients of the session!
         'session'     : ('session name', None, 'store', 'default', 'N'),
         'netcat'      : ('run netcat test instead of rsync', None, 'store_true', False),
