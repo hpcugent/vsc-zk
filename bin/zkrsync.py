@@ -65,23 +65,30 @@ def zkrsync_parse(options):
 def main():
     """ Start a new rsync client (destination or source) in a specified session """
     options = {
+        # Zookeeper connection options:
         'servers'     : ('list of zk servers', 'strlist', 'store', None),
-        'domain'      : ('substitute domain', None, 'store', None),
-        'source'      : ('rsync source', None, 'store_true', False, 'S'),
-        'destination' : ('rsync destination', None, 'store_true', False, 'D'),
-        'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),
-        'session'     : ('session name', None, 'store', 'default', 'N'),
-        'depth'       : ('queue depth', "int", 'store', 4),
         'user'        : ('user with create rights on zookeeper', None, 'store', 'root', 'u'),
         'passwd'      : ('password for user with create rights', None, 'store', 'admin', 'p'),
-        'rsyncport'   : ('port on wich rsync binds', "int", 'store', 4444),
+        # Role options, define exactly one of these:
+        'source'      : ('rsync source', None, 'store_true', False, 'S'),
+        'destination' : ('rsync destination', None, 'store_true', False, 'D'),
+        'pathsonly'   : ('Do only a test run of the pathlist building', None, 'store_true', False),
+        'state'       : ('Show only the state', None, 'store_true', False),
+        # Session options; should be the same on all clients of the session!
+        'session'     : ('session name', None, 'store', 'default', 'N'),
         'netcat'      : ('run netcat test instead of rsync', None, 'store_true', False),
         'dryrun'      : ('run rsync in dry run mode', None, 'store_true', False, 'n'),
-        'delete'      : ('run rsync with --delete', None, 'store_true', False),
-        'pathsonly'   : ('Do a test run of the pathlist building', None, 'store_true', False),
-        'logfile'     : ('Output to logfile', None, 'store', None),
-        'state'       : ('Show only the state', None, 'store_true', False),
+        'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),  # May differ between sources and dests
+        # Pathbuilding (Source clients and pathsonly ) specific options:
         'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
+        'depth'       : ('queue depth', "int", 'store', 4),
+        # Source clients options; should be the same on all clients of the session!:
+        'delete'      : ('run rsync with --delete', None, 'store_true', False),
+        # Individual client options
+        'domain'      : ('substitute domain', None, 'store', None),
+        'logfile'     : ('Output to logfile', None, 'store', None),
+        # Individuql Destination client specific options
+        'rsyncport'   : ('port on wich rsync binds', "int", 'store', 4444),
     }
 
     go = simple_option(options)
@@ -100,7 +107,7 @@ def main():
         }
     if go.options.state:
         rsyncP = RsyncSource(go.options.servers, **kwargs)
-        logger.info('There are still %s of %s paths to do' % (rsyncP.len_paths(), rsyncP.paths_total))
+        logger.info('Progress: %s of %s paths remaining' % (rsyncP.len_paths(), rsyncP.paths_total))
         rsyncP.exit()
         sys.exit(0)
 
@@ -156,16 +163,16 @@ def main():
             while not rsyncS.isempty_pathqueue():
                 if todo_paths != rsyncS.len_paths():  # Output progress state
                     todo_paths = rsyncS.len_paths()
-                    logger.info('There are still %s of %s paths to do' % (todo_paths, paths_total))
+                    logger.info('Progress: %s of %s paths remaining' % (todo_paths, paths_total))
                 time.sleep(SLEEP_TIME)
             rsyncS.shutdown_all()
             rsyncS.exit()
             sys.exit(0)
         else:
             rsyncS.ready_with_stop_watch()
-            logger.debug('ready to do some rsyncing')
+            logger.debug('ready to process paths')
             while not rsyncS.is_ready():
-                logger.debug('start rsyncing')
+                logger.debug('trying to get a path out of Queue')
                 rsyncS.rsync(TIME_OUT)
 
             logger.debug('%s Ready' % rsyncS.get_whoami())

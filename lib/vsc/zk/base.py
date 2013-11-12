@@ -77,7 +77,7 @@ class VscKazooClient(KazooClient):
         }
         super(VscKazooClient, self).__init__(**kwargs)
         self.start()
-        self.log.debug('started')
+        self.log.debug('Zookeeper client started')
 
         self.watchpath = self.znode_path(self.session + '/watch')
 

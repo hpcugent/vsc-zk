@@ -136,7 +136,7 @@ class RsyncSource(RsyncController):
         self.cleanup()
 
     def cleanup(self):
-        """ Remove all session nodes in zookeeper """
+        """ Remove all session nodes in zookeeper after first logging the output queues """
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.path_queue.path, recursive=True)
 
