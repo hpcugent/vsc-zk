@@ -3,13 +3,15 @@ vsc-zk
 
 zookeeper tools
 ----------------
+vsc-zk contains scripts to build zookeeper trees and tools using zookeeper.
+
+zkinitree builds a tree in zookeeper from a config file.
+ 
 vsc-zkrsync uses zookeeper to distribute rsync across multiple nodes 
 when rsyncing (large) (shared) filesystems.
 
-Large fraction of rsync calls is spend in gathering the required metadata, 
-and then performing the actual data synchronisation. Especially when dealing 
-with "incremental" rsync. Spreading the load over multiple processes can mean 
-a significant speed increase; although other bottlenecks, eg access to the 
+A large fraction of rsync calls is spent in gathering the required metadata, 
+before performing the actual data synchronisation. This issue becomes worse in the case of an incremental rsync. Distributing the load across multiple processes may lead to a significant performance gain; although other bottlenecks, e.g., access to the 
 metadata, might show up.
 
 The implementation uses zookeeper to coordinate the distribution of collecting 
@@ -19,9 +21,9 @@ and sync the data across many processes and/or nodes.
 Installation of Zookeeper 
 --------------------------
 
-A zookeeper server with proper ACLs to a base znode is required.
+A zookeeper server with proper ACLs to a base znode (zookeeper node) is required.
 
-If none is available, installation can be performed as follows:
+If no such server is available, installation can be performed as follows:
 
     zkversion=3.4.5
     basepath=/tmp/$USER # is not permanent
@@ -77,7 +79,7 @@ Testing pathbuilding: add option --pathsonly
 
 run `zkrsync -H` to see all options
 
-If anything (zookeeper related) go wrong (no cleanup has been done)
+If anything (zookeeper related) goes wrong (no cleanup has been done)
 
  - kill all running source and destination clients ( of that session)
  - wait like 20 seconds, making sure all zookeeper connections has timed out
