@@ -87,7 +87,7 @@ def main():
         # Individual client options
         'domain'      : ('substitute domain', None, 'store', None),
         'logfile'     : ('Output to logfile', None, 'store', None),
-        # Individuql Destination client specific options
+        # Individual Destination client specific options
         'rsyncport'   : ('port on wich rsync binds', "int", 'store', 4444),
     }
 
