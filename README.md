@@ -55,15 +55,38 @@ If none is available, installation can be performed as follows:
 
 Build initial zookeeper tree
 -----------------------------
+Use zkinitree to build an initial tree in zookeeper from a config file.
+It will create paths with specified ACls.
 
+An example config file can be found in examples folder (zkinitree.cfg) 
 
 
 Usage of zkrsync
 -----------------
+Example usage for N-parallelised rsync :
+Start N+1 sources (first source client will be the Master)
+    zkrsync -d -S --servers <servers> -u <user> -p <pass> -r <sourcepath> --depth <depth> --session <session> --logfile <logfile>
 
+Start N destinations:
+    zkrsync -d -D --servers <servers> -u <user> -p <pass> -r <destpath> --depth <depth> --session <session> --logfile <logfile>
 
+Testing pathbuilding: add option --pathsonly
 
+run `zkrsync -H` to see all options
 
+If anything (zookeeper related) go wrong (no cleanup has been done)
+
+ - kill all running source and destination clients ( of that session)
+ - wait like 20 seconds, making sure all zookeeper connections has timed out
+ - run exactly ONE Source client, if shutdown was not clean it will recognise it, clean up and exit.
+ - If it doesn't clean up but just exists, maybe there is still a client running.
+ - you can than start over
+
+Global remarks:
+
+ - Define always a session to make sure you don't mix up different sessions
+ - Make sure parameters path, dryrun and delete are all the same: These parameters are not checked (at this moment) but will run with local parameters.
+ - Parameter depth is only used on pathbuilding, so the Source Master will always provide this.
 
 
 
