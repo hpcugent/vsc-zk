@@ -33,7 +33,7 @@ def main():
         'servers':('list of zk servers', 'strlist', 'store', None)
     }
     go = simple_option(options)
-
+    print go.configfile_remainder
     rpasswd, rpath = get_rootinfo(go.configfile_remainder)
     znodes, users = parse_zkconfig(go.configfile_remainder)
 

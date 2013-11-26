@@ -60,6 +60,7 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None):
     Recursive is True if and only if it is exactly on the depth specified.
     Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders) 
     """
+    ex_uid = None
     if exclude_usr:
         ex_uid = getpwnam(exclude_usr).pw_uid
 
