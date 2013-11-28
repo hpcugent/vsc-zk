@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: latin-1 -*-
-# #
-# Copyright 2009-2013 Ghent University
+# -*- encoding: utf-8 -*-
+#
+# Copyright 2012-2013 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,10 +24,27 @@
 # You should have received a copy of the GNU Library General Public License
 # along with vsc-zk. If not, see <http://www.gnu.org/licenses/>.
 #
-"""
-@author: Andy Georges (Ghent University)
-"""
-# the vsc namespace is used in different folders allong the system
-# so explicitly declare this is also the vsc namespace
-import pkg_resources
-pkg_resources.declare_namespace(__name__)
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+import test.configparser as cp
+import test.depthwalk as dw
+import test.zkclient as zk
+import unittest
+
+
+from vsc.utils import fancylogger
+fancylogger.logToScreen(enable=False)
+
+suite = unittest.TestSuite([x.suite() for  x in (cp, dw, zk)])
+
+try:
+    import xmlrunner
+    rs = xmlrunner.XMLTestRunner(output="test-reports").run(suite)
+except ImportError, err:
+    rs = unittest.TextTestRunner().run(suite)
+
+if not rs.wasSuccessful():
+    sys.exit(1)

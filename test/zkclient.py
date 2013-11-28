@@ -105,9 +105,9 @@ class zkClientTest(TestCase):
         dummyq = LockingQueue('foo', 'bar')
         self.assertTupleEqual(zkclient.attempt_run('echo test', dummyq), (0, 'test\n'))
 
-    def suite():
-        """ returns all the testcases in this module """
-        return TestLoader().loadTestsFromTestCase(ConfigParserTest)
+def suite():
+     """ returns all the testcases in this module """
+     return TestLoader().loadTestsFromTestCase(zkClientTest)
 
 if __name__ == '__main__':
     """Use this __main__ block to help write and test unittests

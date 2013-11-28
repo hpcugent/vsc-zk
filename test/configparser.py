@@ -70,9 +70,9 @@ class ConfigParserTest(TestCase):
     def tearDown(self):
         pass
 
-    def suite():
-        """ returns all the testcases in this module """
-        return TestLoader().loadTestsFromTestCase(ConfigParserTest)
+def suite():
+    """ returns all the testcases in this module """
+    return TestLoader().loadTestsFromTestCase(ConfigParserTest)
 
 if __name__ == '__main__':
     """Use this __main__ block to help write and test unittests
