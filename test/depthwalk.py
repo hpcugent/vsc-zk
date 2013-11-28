@@ -1,14 +1,14 @@
 #
 # Copyright 2012-2013 Ghent University
 #
-# This file is part of vsc-base,
+# This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
 # the Hercules foundation (http://www.herculesstichting.be/in_English)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-base
+# http://github.com/hpcugent/vsc-zk
 #
 # vsc-zk is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Library General Public License as
@@ -21,12 +21,12 @@
 # GNU Library General Public License for more details.
 #
 # You should have received a copy of the GNU Library General Public License
-# along with vsc-base. If not, see <http://www.gnu.org/licenses/>.
+# along with vsc-zk. If not, see <http://www.gnu.org/licenses/>.
 #
 """
 Unit tests for depthwalk
 
-@author: Kenneth Waegemam (Ghent University)
+@author: Kenneth Waegeman (Ghent University)
 """
 import os
 import re

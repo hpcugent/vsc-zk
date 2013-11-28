@@ -11,7 +11,9 @@ vsc-zk contains scripts to build zookeeper trees and tools using zookeeper.
 when rsyncing (large) (shared) filesystems.
 
     A large fraction of rsync calls is spent in gathering the required metadata, 
-before performing the actual data synchronisation. This issue becomes worse in the case of an incremental rsync. Distributing the load across multiple processes may lead to a significant performance gain even though other bottlenecks, such as access to the metadata, can become apparent.
+before performing the actual data synchronisation. This issue becomes worse in the case of an incremental rsync. 
+Distributing the load across multiple processes may lead to a significant performance gain 
+even though other bottlenecks, such as access to the metadata, can become apparent.
 
     The implementation uses zookeeper to coordinate the distribution of collecting 
 and sync the data across many processes and/or nodes.
@@ -77,17 +79,21 @@ Testing pathbuilding: add option --pathsonly
 
 run `zkrsync -H` to see all options
 
-If anything (zookeeper related) goes wrong (no cleanup has been done)
+If anything (zookeeper-related) goes wrong (no cleanup has been done)
 
  - kill all running source and destination clients (of that session)
  - wait about 20 seconds (ymmv), making sure all zookeeper connections have timed out
- - run exactly one source client, if the previous shutdown was not finished cleanly, zookeeper will recognise this and attempt a new cleanup before exiting.
- - Should the previous step fail to clean up, there might still be a running client. Make sure they are all killed 
+ - run exactly one source client, if the previous shutdown was not finished cleanly, 
+zookeeper will recognise this and attempt a new cleanup before exiting.
+ - Should the previous step fail to clean up, there might still be a running client. 
+Make sure they are all killed 
  - Start a new zkrsync process
 
 Global remarks:
 
  - Always define a session to make sure you do not mix up different sessions
- - Make sure parameters path, dryrun and delete are all the same: These parameters are not checked (at this moment) and each client will use its own parameters. This can lead to inconsistencies (e.g., some paths runs with the dry-run option while others are effectively synced.)
+ - Make sure parameters path, dryrun and delete are all the same: These parameters are not checked 
+(at this moment) and each client will use its own parameters. 
+This can lead to inconsistencies (e.g., some paths runs with the dry-run option while others are effectively synced.)
  - Parameter depth is only used on pathbuilding, so the Source Master will always provide this.
 
