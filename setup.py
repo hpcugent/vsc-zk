@@ -57,7 +57,7 @@ PACKAGE = {
                 'bin/zkinitree.py',
                 ],
     'install_requires': [
-        'vsc-base >= 1.2',
+        'vsc-base >= 1.6.7',
         'kazoo >= 1.3',
     ],
 }

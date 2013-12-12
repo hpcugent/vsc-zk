@@ -62,7 +62,7 @@ Vsc-zk requires:
  
  * ZooKeeper 3.4 or above, since it is using transactions.
  * Kazoo 1.3.1 or above (`pip install kazoo`)
- * recent version of vsc-base
+ * recent version of vsc-base (>= 1.6.7)
 
 ## Build the initial zookeeper tree
 
