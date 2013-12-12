@@ -54,6 +54,15 @@ Start zookeeper server
     `./zkServer.sh start $PWD/zk.conf `
 
 
+Note: You should have Java installed to run Zookeeper.
+
+## Dependencies 
+
+Vsc-zk requires:
+ 
+ * ZooKeeper 3.4 or above, since it is using transactions.
+ * Kazoo 1.3.1 or above (`pip install kazoo`)
+ * recent version of vsc-base
 
 ## Build the initial zookeeper tree
 
