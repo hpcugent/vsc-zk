@@ -55,7 +55,7 @@ Start zookeeper server
 
 
 Note: You should have Java (JDK 6 or greater) installed to run Zookeeper.
-More information can be found in the zookeeper documentation 
+More information can be found in the zookeeper documentation. 
 
 ## Dependencies 
 
