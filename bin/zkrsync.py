@@ -31,6 +31,7 @@ vsc-zk zkrsync
 @author: Kenneth Waegeman (Ghent University)
 """
 
+import os
 import re
 import sys
 import time
@@ -68,11 +69,11 @@ def zkrsync_parse(options):
         logger.error("Client can not be the source AND the destination")
         sys.exit(1)
     if options.source:
-        type = "source"
+        rstype = "source"
     elif options.destination:
-        type = "destination"
+        rstype = "destination"
 
-    return rootcreds, admin_acl, type
+    return rootcreds, admin_acl, rstype
 
 def main():
     """ Start a new rsync client (destination or source) in a specified session """
@@ -98,17 +99,23 @@ def main():
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
         # Individual client options
         'domain'      : ('substitute domain', None, 'store', None),
-        'logfile'     : ('Output to logfile', None, 'store', None),
+        'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s'),
         # Individual Destination client specific options
-        'rsyncport'   : ('port on wich rsync binds', "int", 'store', 4444),
+        'rsyncport'   : ('port on wich rsync binds', "int", 'store', None),
+        'startport'   : ('offset to look for rsync ports', "int", 'store', 4444)
     }
 
     go = simple_option(options)
-    acreds, admin_acl, type = zkrsync_parse(go.options)
+    acreds, admin_acl, rstype = zkrsync_parse(go.options)
 
     if go.options.logfile:
-        fancylogger.logToFile(go.options.logfile)
-        logger.debug('Logging to file %s:' % go.options.logfile)
+        logfile = go.options.logfile % {
+            'session': go.options.session,
+            'rstype': rstype,
+            'pid': str(os.getpid())
+        }
+        fancylogger.logToFile(logfile)
+        logger.debug('Logging to file %s:' % logfile)
 
     kwargs = {
         'session'     : go.options.session,
@@ -144,9 +151,10 @@ def main():
         rsyncP.exit()
         sys.exit(0)
 
-    elif type == "destination":
+    elif rstype == "destination":
         # Start zookeeper connection and rsync daemon
         kwargs['rsyncport'] = go.options.rsyncport
+        kwargs['startport'] = go.options.startport
         kwargs['domain'] = go.options.domain
         rsyncD = RsyncDestination(go.options.servers, **kwargs)
         rsyncD.run()
@@ -155,7 +163,7 @@ def main():
         rsyncD.exit()
         sys.exit(0)
 
-    elif type == "source":
+    elif rstype == "source":
         # Start zookeeper connections
         kwargs['rsyncdepth'] = go.options.depth
         kwargs['dryrun'] = go.options.dryrun
