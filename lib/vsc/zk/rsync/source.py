@@ -239,7 +239,7 @@ class RsyncSource(RsyncController):
         elif not isinstance(path, basestring):
             self.log.raiseException('Invalid path: %s !' % path)
         else:
-            host, port, pid = tuple(destination.split(':'))
+            port, host, pid = tuple(destination.split(':'))
             if self.netcat:
                 code, output = self.run_netcat(path, host, port)
             else:
@@ -255,17 +255,26 @@ class RsyncSource(RsyncController):
         if len(self.dest_queue) == 0:
             self.log.debug('Destinations not yet available')
         dest = self.dest_queue.get(timeout)
-        if dest and not self.member_of_party(dest, 'allsd'):
-            self.log.debug('destination is not found in party')
-            self.dest_queue.consume()
-            return None
-        else:
-            return dest
+        if dest:
+            port, whoami = tuple(dest.split(':', 1))
+            if not self.member_of_party(whoami, 'allsd'):
+                self.log.debug('destination is not found in party')
+                self.dest_queue.consume()
+                return None
+            else:
+                portmap = '%s/portmap/%s' % (self.session, whoami)
+                lport, stat = self.get_znode(portmap)
+                if port != lport:
+                    self.log.debug('destination port not valid (anymore)')
+                    self.dest_queue.consume()
+                    return None
+        return dest
 
     def rsync(self, timeout=None):
         """ Get a destination, a path and call a new rsync iteration """
         dest = self.get_a_dest(timeout)  # Keeps it if not consuming
         if dest:  # We locked a rsync daemon
+            self.log.debug('Got destination %s' % dest)
             path = self.path_queue.get(timeout)
             if path and self.dest_queue.holds_lock():  # Nothing wrong happened in timeout
                 if self.rsync_path(path, dest):

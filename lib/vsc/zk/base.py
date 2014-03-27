@@ -101,8 +101,7 @@ class VscKazooClient(KazooClient):
         data = [socket.getfqdn(), str(os.getpid())]
         if name:
             data.append(name)
-
-        res = '-'.join(data)
+        res = ':'.join(data)
         self.log.debug("get_whoami: %s" % res)
         return res
 
@@ -145,7 +144,7 @@ class VscKazooClient(KazooClient):
     def make_znode(self, znode=None, value="", acl=None, **kwargs):
         """Make a znode, raise NodeExistsError if exists"""
         znode_path = self.znode_path(znode)
-        self.log.debug("znode path is: %s" % znode_path)
+        self.log.debug("creating znode path: %s" % znode_path)
         try:
             znode = self.create(znode_path, value=value, acl=acl, **kwargs)
         except NodeExistsError:
@@ -160,6 +159,14 @@ class VscKazooClient(KazooClient):
         """Checks if znode exists"""
         znode_path = self.znode_path(znode)
         return self.exists(znode_path)
+
+    def set_znode(self, znode=None, value=''):
+        znode_path = self.znode_path(znode)
+        return self.set(znode_path, value)
+
+    def get_znode(self, znode=None):
+        znode_path = self.znode_path(znode)
+        return self.get(znode_path)
 
     def znode_acls(self, znode=None, acl=None):
         """set the acl on a znode"""

@@ -48,7 +48,7 @@ class RsyncDestination(RsyncController):
     BASE_PARTIES = RsyncController.BASE_PARTIES + ['dests']
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, rsyncport=873,  # root default rsyncport: 873
+                 auth_data=None, rsyncpath=None, rsyncport=None, startport=4444,
                  netcat=False, domain=None):
 
         kwargs = {
@@ -67,18 +67,10 @@ class RsyncDestination(RsyncController):
             host = '%s.%s' % (hname[0], domain)
         self.daemon_host = host
         self.daemon_port = rsyncport
+        self.start_port = startport
+        self.port = None
 
         super(RsyncDestination, self).__init__(**kwargs)
-
-    def get_whoami(self, name=None):  # Override base method
-        """Create a unique name for this client"""
-        data = [self.daemon_host, str(self.daemon_port), str(os.getpid())]
-        if name:
-            data.append(name)
-
-        res = ':'.join(data)
-        self.log.debug("get_whoami: %s" % res)
-        return res
 
     def get_destss(self):
         """ Get all zookeeper clients in this session registered as destinations"""
@@ -86,10 +78,6 @@ class RsyncDestination(RsyncController):
         for host in self.parties['dests']:
             hosts.append(host)
         return hosts
-
-    def daemon_info(self):
-        """ Return hostname:port of rsync daemon"""
-        return '%s:%s' % (self.daemon_host, str(self.daemon_port))
 
     def generate_daemon_config(self):
         """ Write config file for this session """
@@ -104,24 +92,61 @@ class RsyncDestination(RsyncController):
         config.write(file)
         return name
 
+    def reserve_port(self):
+        """ Search for an available port """
+        portdir = '%s/usedports/%s' % (self.session, self.daemon_host)
+        self.ensure_path(self.znode_path(portdir))
+        lock = self.Lock(self.znode_path(self.session + '/portlock'), self.whoami)
+        with lock:
+            if self.daemon_port:
+                port = self.daemon_port
+                portpath = '%s/%s' % (portdir, port)
+                if self.exists_znode(portpath):
+                    self.log.raiseException('Port already in use: %s' % port)
+
+            else:
+                port = self.start_port
+                portpath = '%s/%s' % (portdir, port)
+                pfree = False
+                while (self.exists_znode(portpath)):
+                    port += 1
+                    portpath = '%s/%s' % (portdir, port)
+
+            self.make_znode(portpath, ephemeral=True)
+            portmap = '%s/portmap/%s' % (self.session, self.whoami)
+            if not self.exists_znode(portmap):
+                self.make_znode(portmap, ephemeral=True, makepath=True)
+            self.set_znode(portmap, str(port))
+
+        self.port = port
+
     def run_rsync(self):
         """ Runs the rsync command """
         config = self.generate_daemon_config()
-        code, output = self.run_with_watch('rsync --daemon --no-detach --config=%s --port %s'
-                                   % (config, self.daemon_port))
+
+        cmd = ['rsync', '--daemon', '--no-detach', '--config' , config, '--port', self.port]
+        code, output = self.run_with_watch(' '.join(cmd))
+
         os.remove(config)
         return code, output
 
     def run_netcat(self):
         """ Test run with netcat """
-        return self.run_with_watch('nc -l -k %s' % self.daemon_port)
+        cmd = ['nc', '-l', '-k', str(self.port)]
+        return self.run_with_watch(' '.join(cmd))
 
-    def run(self):
+    def run(self, attempts=3):
         """Starts rsync daemon and add to the queue"""
         self.ready_with_stop_watch()
-        # Add myself to dest_queue
-        self.dest_queue.put(self.whoami)
-        if self.netcat:
-            self.run_netcat()
-        else:
-            self.run_rsync()
+        attempt = 1
+        while (attempt <= attempts and not self.is_ready()):
+            self.reserve_port()
+            # Add myself to dest_queue
+            self.dest_queue.put('%s:%s' % (self.port, self.whoami))
+            if self.netcat:
+                self.run_netcat()
+            else:
+                self.run_rsync()
+
+            attempt += 1
+
