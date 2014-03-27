@@ -33,6 +33,7 @@ vsc-zk zkrsync
 
 import os
 import re
+import stat
 import sys
 import time
 
@@ -48,6 +49,8 @@ from vsc.zk.rsync.source import RsyncSource
 
 SLEEP_TIME = 5
 TIME_OUT = 5
+CL_DEST = "dest"
+CL_SOURCE = "source"
 logger = fancylogger.getLogger()
 
 def zkrsync_parse(options):
@@ -69,9 +72,9 @@ def zkrsync_parse(options):
         logger.error("Client can not be the source AND the destination")
         sys.exit(1)
     if options.source:
-        rstype = "source"
+        rstype = CL_SOURCE
     elif options.destination:
-        rstype = "destination"
+        rstype = CL_DEST
 
     return rootcreds, admin_acl, rstype
 
@@ -101,8 +104,8 @@ def main():
         'domain'      : ('substitute domain', None, 'store', None),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s'),
         # Individual Destination client specific options
-        'rsyncport'   : ('port on wich rsync binds', "int", 'store', None),
-        'startport'   : ('offset to look for rsync ports', "int", 'store', 4444)
+        'rsyncport'   : ('force port on which rsyncd binds', "int", 'store', None),
+        'startport'   : ('offset to look for rsyncd ports', "int", 'store', 4444)
     }
 
     go = simple_option(options)
@@ -114,6 +117,12 @@ def main():
             'rstype': rstype,
             'pid': str(os.getpid())
         }
+        logdir = os.path.dirname(logfile)
+        if logdir:
+            if not os.path.exists(logdir):
+                os.makedirs(logdir)
+            os.chmod(logdir, stat.S_IRWXU)
+
         fancylogger.logToFile(logfile)
         logger.debug('Logging to file %s:' % logfile)
 
@@ -151,7 +160,7 @@ def main():
         rsyncP.exit()
         sys.exit(0)
 
-    elif rstype == "destination":
+    elif rstype == CL_DEST:
         # Start zookeeper connection and rsync daemon
         kwargs['rsyncport'] = go.options.rsyncport
         kwargs['startport'] = go.options.startport
@@ -163,7 +172,7 @@ def main():
         rsyncD.exit()
         sys.exit(0)
 
-    elif rstype == "source":
+    elif rstype == CL_SOURCE:
         # Start zookeeper connections
         kwargs['rsyncdepth'] = go.options.depth
         kwargs['dryrun'] = go.options.dryrun
