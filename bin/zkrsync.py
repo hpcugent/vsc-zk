@@ -102,7 +102,7 @@ def main():
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
         # Individual client options
         'domain'      : ('substitute domain', None, 'store', None),
-        'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s'),
+        'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
         # Individual Destination client specific options
         'rsyncport'   : ('force port on which rsyncd binds', "int", 'store', None),
         'startport'   : ('offset to look for rsyncd ports', "int", 'store', 4444)

@@ -68,6 +68,7 @@ class RsyncDestination(RsyncController):
         self.daemon_host = host
         self.daemon_port = rsyncport
         self.start_port = startport
+        self.port = None
 
         super(RsyncDestination, self).__init__(**kwargs)
 
