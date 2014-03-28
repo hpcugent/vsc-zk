@@ -73,6 +73,15 @@ class RsyncDestination(RsyncController):
 
         super(RsyncDestination, self).__init__(**kwargs)
 
+    def get_whoami(self, name=None):  # Override base method
+        """Create a unique name for this client"""
+        data = [self.daemon_host, str(os.getpid())]
+        if name:
+            data.append(name)
+        res = ':'.join(data)
+        self.log.debug("get_whoami: %s" % res)
+        return res
+
     def get_destss(self):
         """ Get all zookeeper clients in this session registered as destinations"""
         hosts = []
