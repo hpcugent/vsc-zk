@@ -71,10 +71,12 @@ def zkrsync_parse(options):
     if options.source and options.destination:
         logger.error("Client can not be the source AND the destination")
         sys.exit(1)
-    if options.source:
+    elif options.source:
         rstype = CL_SOURCE
     elif options.destination:
         rstype = CL_DEST
+    else:
+        rstype = None
 
     return rootcreds, admin_acl, rstype
 
