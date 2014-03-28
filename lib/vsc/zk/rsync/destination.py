@@ -125,7 +125,7 @@ class RsyncDestination(RsyncController):
         """ Runs the rsync command """
         config = self.generate_daemon_config()
 
-        cmd = ['rsync', '--daemon', '--no-detach', '--config' , config, '--port', self.port]
+        cmd = ['rsync', '--daemon', '--no-detach', '--config' , config, '--port', str(self.port)]
         code, output = self.run_with_watch_and_queue(' '.join(cmd))
 
         os.remove(config)
