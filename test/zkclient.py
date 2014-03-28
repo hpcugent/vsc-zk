@@ -99,12 +99,6 @@ class zkClientTest(TestCase):
         filec = open(filen, "r").read()
         self.assertMultiLineEqual(filec, res)
 
-    def test_attempt_run(self):
-        """ Test the attempt run command"""
-        zkclient = RsyncSource('dummy', netcat=True, rsyncdepth=2)
-        dummyq = LockingQueue('foo', 'bar')
-        self.assertTupleEqual(zkclient.attempt_run('echo test', dummyq), (0, 'test\n'))
-
 def suite():
      """ returns all the testcases in this module """
      return TestLoader().loadTestsFromTestCase(zkClientTest)
