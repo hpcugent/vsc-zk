@@ -50,7 +50,9 @@ class RsyncSource(RsyncController):
     """
 
     BASE_PARTIES = RsyncController.BASE_PARTIES + ['sources']
+    NC_RANGE = 15
     SLEEPTIME = 1  # For netcat stub
+    TIME_OUT = 5  # waiting for destination
     WAITTIME = 5  # check interval of closure of other clients
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
@@ -116,7 +118,7 @@ class RsyncSource(RsyncController):
         if self.exists(self.path_queue.path):
             self.delete(self.path_queue.path, recursive=True)
         if self.netcat:
-            paths = [str(i) for i in range(5)]
+            paths = [str(i) for i in range(self.NC_RANGE)]
             time.sleep(self.SLEEPTIME)
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth, exclude_re=self.excludere,
@@ -188,19 +190,33 @@ class RsyncSource(RsyncController):
             file.write('%s/' % subpath)
             return name
 
-    def attempt_run(self, command, queue_path, attempts=3):
+    def attempt_run(self, path, attempts=3):
         """ Try to run a command x times, on failure add to failed queue """
         attempt = 1
         while (attempt <= attempts):
-            code, output = RunAsyncLoopLog.run(command)
-            if code == 0:
-                self.completed_queue.put(queue_path)
-                return code, output
-            else:
-                attempt += 1
-        self.log.error('There were issues with path %s!' % queue_path)
-        self.failed_queue.put(queue_path)
-        return 0, output  # otherwise client get stuck
+            dest = self.get_a_dest(self.TIME_OUT)  # Keeps it if not consuming
+            if dest:  # We locked a rsync daemon
+                self.log.debug('Got destination %s' % dest)
+                port, host, other = tuple(dest.split(':', 2))
+                if self.netcat:
+                    code, output = self.run_netcat(path, host, port)
+                else:
+                    code, output = self.run_rsync(path, host, port)
+                if code == 0:
+                    self.completed_queue.put(path)
+                    return code, output
+            attempt += 1
+            time.sleep(self.WAITTIME)  # Wait before new attempt
+
+        if dest:
+            self.log.error('There were issues with path %s!' % path)
+            self.failed_queue.put(path)
+            return 0, output  # otherwise client get stuck
+        else:
+            self.log.debug('Still no destination after %s tries' % attempts)
+            self.path_queue.put(path)  # Keep path in queue
+            self.path_queue.consume()  # But stop locking it
+            return 1, None
 
     def run_rsync(self, encpath, host, port):
         """
@@ -221,7 +237,7 @@ class RsyncSource(RsyncController):
 
         command = 'rsync %s %s/ rsync://%s:%s/%s' % (' '.join(flags), self.rsyncpath,
                                                      host, port, self.module)
-        code, output = self.attempt_run(command, encpath)
+        code, output = RunAsyncLoopLog.run(command)
         os.remove(file)
         return code, output
 
@@ -230,21 +246,18 @@ class RsyncSource(RsyncController):
         time.sleep(self.SLEEPTIME)
         command = 'echo %s is sending %s | nc %s %s' % (self.whoami, path, host, port)
 
-        return self.attempt_run(command, path)
+        return RunAsyncLoopLog.run(command)
 
-    def rsync_path(self, path, destination):
+    def rsync_path(self, path):
         """ start rsync session for given path and destination, returns true if successful """
         if not path:
             self.log.raiseException('Empty path given!')
         elif not isinstance(path, basestring):
             self.log.raiseException('Invalid path: %s !' % path)
         else:
-            port, host, pid = tuple(destination.split(':'))
-            if self.netcat:
-                code, output = self.run_netcat(path, host, port)
-            else:
-                code, output = self.run_rsync(path, host, port)
-            self.output_queue.put(output)
+            code, output = self.attempt_run(path)
+            if output:
+                self.output_queue.put(output)
             return (code == 0)
 
     def get_a_dest(self, timeout):
@@ -265,17 +278,14 @@ class RsyncSource(RsyncController):
                 portmap = '%s/portmap/%s' % (self.session, whoami)
                 lport, stat = self.get_znode(portmap)
                 if port != lport:
-                    self.log.debug('destination port not valid (anymore)')
+                    self.log.error('destination port not valid')  # Should not happen
                     self.dest_queue.consume()
                     return None
         return dest
 
     def rsync(self, timeout=None):
         """ Get a destination, a path and call a new rsync iteration """
-        dest = self.get_a_dest(timeout)  # Keeps it if not consuming
-        if dest:  # We locked a rsync daemon
-            self.log.debug('Got destination %s' % dest)
-            path = self.path_queue.get(timeout)
-            if path and self.dest_queue.holds_lock():  # Nothing wrong happened in timeout
-                if self.rsync_path(path, dest):
+        path = self.path_queue.get(timeout)
+        if path:
+            if self.rsync_path(path):
                     self.path_queue.consume()
