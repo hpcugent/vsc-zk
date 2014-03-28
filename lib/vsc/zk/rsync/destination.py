@@ -142,7 +142,6 @@ class RsyncDestination(RsyncController):
         attempt = 1
         while (attempt <= attempts and not self.is_ready()):
             self.reserve_port()
-            # Add myself to dest_queue
 
             if self.netcat:
                 self.run_netcat()

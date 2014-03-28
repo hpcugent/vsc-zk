@@ -214,8 +214,9 @@ class RsyncSource(RsyncController):
             return 0, output  # otherwise client get stuck
         else:
             self.log.debug('Still no destination after %s tries' % attempts)
-            self.path_queue.put(path)  # Keep path in queue
+            self.path_queue.put(path, priority=50)  # Keep path in queue
             self.path_queue.consume()  # But stop locking it
+            time.sleep(self.TIME_OUT)  # Wait before new attempt
             return 1, None
 
     def run_rsync(self, encpath, host, port):
