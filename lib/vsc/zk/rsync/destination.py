@@ -41,6 +41,25 @@ from kazoo.recipe.queue import LockingQueue
 from vsc.zk.base import RunWatchLoopLog
 from vsc.zk.rsync.controller import RsyncController
 
+class RunDestination(RunWatchLoopLog):
+    """When zookeeperclient is ready, stop"""
+    def __init__(self, cmd, **kwargs):
+
+        super(RunDestination, self).__init__(cmd, **kwargs)
+        self.registered = False
+
+    def _loop_process_output(self, output):
+        """Process the output that is read in blocks
+        send it to the logger. The logger need to be stream-like
+        Register destination after 2 loops.
+        When watch is ready, stop
+        """
+        super(RunDestination, self)._loop_process_output(output)
+        if not self.registered and self._loop_count > 2:
+            self.watchclient.add_to_queue()
+            self.registered = True
+
+
 class RsyncDestination(RsyncController):
     """
     Class for controlling rsync with Zookeeper. 
@@ -170,22 +189,3 @@ class RsyncDestination(RsyncController):
         """
         code, output = RunDestination.run(command, watchclient=self)
         return code, output
-
-class RunDestination(RunWatchLoopLog):
-    """When zookeeperclient is ready, stop"""
-    def __init__(self, cmd, **kwargs):
-
-        super(RunDestination, self).__init__(cmd, **kwargs)
-        self.registered = False
-
-    def _loop_process_output(self, output):
-        """Process the output that is read in blocks
-        send it to the logger. The logger need to be stream-like
-        Register destination after 2 loops.
-        When watch is ready, stop
-        """
-        super(RunDestination, self)._loop_process_output(output)
-        if not self.registered and self._loop_count > 2:
-            self.watchclient.add_to_queue()
-            self.registered = True
-
