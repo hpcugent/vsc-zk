@@ -104,6 +104,8 @@ run `zkrsync -H` to see all options
 
 Default logging goes to `/tmp/zkrsync/<session>-<source|dest>-<pid>.log`. Use the `logfile` option to change the template.
 
+When running in daemon mode, a pidfile will be generated. Default location is `/tmp/zkrsync/<session>-<source|dest>-<pid>.pid` (pid is pid of process that starts the daemon). This can also be templated with the `pidfile` option.
+
 If anything (zookeeper-related) goes wrong (no cleanup has been done)
 
  - kill all running source and destination clients (of that session)
