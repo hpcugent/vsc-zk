@@ -41,8 +41,8 @@ def remove_bdist_rpm_source_file():
 
 shared_setup.remove_extra_bdist_rpm_files = remove_bdist_rpm_source_file
 shared_setup.SHARED_TARGET.update({
-    'url': 'https://github.ugent.be/hpcugent/vsc-zk',
-    'download_url': 'https://github.ugent.be/hpcugent/vsc-zk'
+    'url': 'https://github.com/hpcugent/vsc-zk',
+    'download_url': 'https://github.com/hpcugent/vsc-zk'
 })
 
 PACKAGE = {
