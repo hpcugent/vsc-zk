@@ -35,7 +35,6 @@ import os
 import re
 import stat
 import sys
-import tempfile
 import time
 
 from kazoo.recipe.lock import Lock
