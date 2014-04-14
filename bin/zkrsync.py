@@ -68,20 +68,19 @@ class ZkrsDaemon(Daemon):
 
 def init_logging(logfile, session, rstype):
     """Initiates the logfile"""
-    if logfile:
-        logfile = logfile % {
-            'session': session,
-            'rstype': rstype,
-            'pid': str(os.getpid())
-        }
-        logdir = os.path.dirname(logfile)
-        if logdir:
-            if not os.path.exists(logdir):
-                os.makedirs(logdir)
-            os.chmod(logdir, stat.S_IRWXU)
+    logfile = logfile % {
+        'session': session,
+        'rstype': rstype,
+        'pid': str(os.getpid())
+    }
+    logdir = os.path.dirname(logfile)
+    if logdir:
+        if not os.path.exists(logdir):
+            os.makedirs(logdir)
+        os.chmod(logdir, stat.S_IRWXU)
 
-        fancylogger.logToFile(logfile)
-        logger.debug('Logging to file %s:' % logfile)
+    fancylogger.logToFile(logfile)
+    logger.debug('Logging to file %s:' % logfile)
 
 def init_pidfile(pidfile, session, rstype):
     """ Prepare pidfile """
@@ -90,18 +89,23 @@ def init_pidfile(pidfile, session, rstype):
         sys.exit(1)
     else:
         pidfile = pidfile % {
-                             'session': session,
-                             'rstype': rstype,
-                             'pid': str(os.getpid())
-                             }
-    return pidfile
+            'session': session,
+            'rstype': rstype,
+            'pid': str(os.getpid())
+        }
+        piddir = os.path.dirname(pidfile)
+        if piddir:
+            if not os.path.exists(piddir):
+                os.makedirs(piddir)
+            os.chmod(piddir, stat.S_IRWXU)
+        return pidfile
 
 def get_state(servers, kwargs):
-        """Get the state of a running session"""
-        rsyncP = RsyncSource(go.options.servers, **kwargs)
-        logger.info('Progress: %s of %s paths remaining' % (rsyncP.len_paths(), rsyncP.paths_total))
-        rsyncP.exit()
-        sys.exit(0)
+    """Get the state of a running session"""
+    rsyncP = RsyncSource(go.options.servers, **kwargs)
+    logger.info('Progress: %s of %s paths remaining' % (rsyncP.len_paths(), rsyncP.paths_total))
+    rsyncP.exit()
+    sys.exit(0)
 
 def do_pathsonly(options, kwargs):
     """Only build the pathqueue and return timings"""
@@ -207,10 +211,8 @@ def start_zkrs(rstype, options, kwargs):
         get_state(options.servers, kwargs)
     elif options.pathsonly:
         do_pathsonly(options, kwargs)
-
     elif rstype == CL_DEST:
         start_destination(options, kwargs)
-
     elif rstype == CL_SOURCE:
         start_source(options, kwargs)
 
@@ -248,8 +250,8 @@ def main():
 
     go = simple_option(options)
     acreds, admin_acl, rstype = zkrsync_parse(go.options)
-
-    init_logging(go.options.logfile, go.options.session, rstype)
+    if go.options.logfile:
+        init_logging(go.options.logfile, go.options.session, rstype)
 
     kwargs = {
         'session'     : go.options.session,
