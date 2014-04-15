@@ -87,22 +87,23 @@ daemon=true
 user=<user>
 passwd=<password>
 depth=<depth>
+#debug=true
 #dryrun=false
 #delete=false
 ```
 Start N+1 sources (first source client will be the Master)
 ```    
-zkrsync -d -S -r <sourcepath> --configfiles=zkrs.conf
+zkrsync -S -r <sourcepath> --configfiles=zkrs.conf
 ```
 Start N destinations:
 ```    
-zkrsync -d -D -r <destpath> --configfiles=zkrs.conf
+zkrsync -D -r <destpath> --configfiles=zkrs.conf
 ```
 Testing pathbuilding: add option --pathsonly
 
 run `zkrsync -H` to see all options
 
-Default logging goes to `/tmp/zkrsync/<session>-<source|dest>-<pid>.log`. Use the `logfile` option to change the template.
+Default logging goes to `/tmp/zkrsync/<session>-<source|dest>-<pid>.log`. Use the `logfile` option to change the template. Use `debug` or `-d` option for more verbose logging.
 
 When running in daemon mode, a pidfile will be generated. Default location is `/tmp/zkrsync/<session>-<source|dest>-<pid>.pid` (pid is pid of process that starts the daemon). This can also be templated with the `pidfile` option.
 
