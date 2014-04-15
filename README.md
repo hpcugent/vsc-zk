@@ -99,11 +99,11 @@ Start N destinations:
 ```    
 zkrsync -D -r <destpath> --configfiles=zkrs.conf
 ```
-Testing pathbuilding: add option --pathsonly
+Testing pathbuilding: add the `pathsonly` option
 
 run `zkrsync -H` to see all options
 
-Default logging goes to `/tmp/zkrsync/<session>-<source|dest>-<pid>.log`. Use the `logfile` option to change the template. Use `debug` or `-d` option for more verbose logging.
+Default logging goes to `/tmp/zkrsync/<session>-<source|dest>-<pid>.log`. Use the `logfile` option to change the template. Use the `debug` option (or short `-d`) for more verbose logging.
 
 When running in daemon mode, a pidfile will be generated. Default location is `/tmp/zkrsync/<session>-<source|dest>-<pid>.pid` (pid is pid of process that starts the daemon). This can also be templated with the `pidfile` option.
 
