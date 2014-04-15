@@ -77,17 +77,35 @@ An example config file can be found in the examples folder (zkinitree.cfg)
 
 Example usage for N-parallelised rsync :
 
+Put reusable values in a config file, e.g. zkrs.conf:
+```
+[MAIN]
+servers=<servers> 
+session=<session>
+domain=<domain>
+daemon=true
+user=<user>
+passwd=<password>
+depth=<depth>
+#debug=true
+#dryrun=false
+#delete=false
+```
 Start N+1 sources (first source client will be the Master)
 ```    
-zkrsync -d -S --servers <servers> -u <user> -p <pass> -r <sourcepath> --depth <depth> --session <session> --logfile <logfile>
+zkrsync -S -r <sourcepath> --configfiles=zkrs.conf
 ```
 Start N destinations:
 ```    
-zkrsync -d -D --servers <servers> -u <user> -p <pass> -r <destpath> --depth <depth> --session <session> --logfile <logfile>
+zkrsync -D -r <destpath> --configfiles=zkrs.conf
 ```
-Testing pathbuilding: add option --pathsonly
+Testing pathbuilding: add the `pathsonly` option
 
 run `zkrsync -H` to see all options
+
+Default logging goes to `/tmp/zkrsync/<session>-<source|dest>-<pid>.log`. Use the `logfile` option to change the template. Use the `debug` option (or short `-d`) for more verbose logging.
+
+When running in daemon mode, a pidfile will be generated. Default location is `/tmp/zkrsync/<session>-<source|dest>-<pid>.pid` (pid is pid of process that starts the daemon). This can also be templated with the `pidfile` option.
 
 If anything (zookeeper-related) goes wrong (no cleanup has been done)
 
