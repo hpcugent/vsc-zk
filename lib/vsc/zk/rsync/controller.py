@@ -63,6 +63,7 @@ class RsyncController(VscKazooClient):
         super(RsyncController, self).__init__(**kwargs)
 
         if not netcat:
+            rsyncpath = rsyncpath.rstrip(os.path.sep)
             if not os.path.isdir(rsyncpath):
                 self.log.raiseException('Path does not exists in filesystem: %s' % rsyncpath)
             if not os.path.isdir(self.RSDIR):

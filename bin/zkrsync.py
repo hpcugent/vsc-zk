@@ -48,7 +48,6 @@ from vsc.zk.configparser import get_rootinfo, parse_zkconfig, parse_acls
 from vsc.zk.rsync.destination import RsyncDestination
 from vsc.zk.rsync.source import RsyncSource
 
-SLEEP_TIME = 5
 TIME_OUT = 5
 CL_DEST = "dest"
 CL_SOURCE = "source"
@@ -80,7 +79,7 @@ def init_logging(logfile, session, rstype):
         os.chmod(logdir, stat.S_IRWXU)
 
     fancylogger.logToFile(logfile)
-    logger.debug('Logging to file %s:' % logfile)
+    logger.info('Logging to file %s:' % logfile)
 
 def init_pidfile(pidfile, session, rstype):
     """ Prepare pidfile """
@@ -158,12 +157,7 @@ def start_source(options, kwargs):
         if not watchnode:
             sys.exit(1)
         paths_total = rsyncS.build_pathqueue()
-        todo_paths = paths_total
-        while not rsyncS.isempty_pathqueue():
-            if todo_paths != rsyncS.len_paths():  # Output progress state
-                todo_paths = rsyncS.len_paths()
-                logger.info('Progress: %s of %s paths remaining' % (todo_paths, paths_total))
-            time.sleep(SLEEP_TIME)
+        rsyncS.wait_and_keep_progress(paths_total)
         rsyncS.shutdown_all()
 
     else:
@@ -235,7 +229,7 @@ def main():
         'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),  # May differ between sources and dests
         # Pathbuilding (Source clients and pathsonly ) specific options:
         'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
-        'depth'       : ('queue depth', "int", 'store', 4),
+        'depth'       : ('queue depth', "int", 'store', 3),
         # Source clients options; should be the same on all clients of the session!:
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
         # Individual client options
