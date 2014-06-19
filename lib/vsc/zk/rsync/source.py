@@ -134,6 +134,26 @@ class RsyncSource(RsyncController):
         """ Returns true if all paths in pathqueue are done """
         return len(self.path_queue) == 0
 
+    def output_progress(self, todo, total):
+        self.log.info('Progress: %s of %s paths remaining, %s failed' % (todo, total, len(self.failed_queue)))
+
+    def output_clients(self):
+        sources = len(self.get_sources())
+        dests = len(self.get_all_hosts()) - sources
+        self.log.info('Connected source clients: %s, connected destination clients: %s', sources, dests)
+
+    def wait_and_keep_progress(self, paths_total):
+        todo_paths = paths_total
+        total_clients = len(self.get_all_hosts())
+        while not self.isempty_pathqueue():
+            if todo_paths != self.len_paths():  # Output progress state
+                todo_paths = self.len_paths()
+                self.output_progress(todo_paths, paths_total)
+            if total_clients != len(self.get_all_hosts()):
+                total_clients = len(self.get_all_hosts())
+                self.output_clients();
+            time.sleep(self.WAITTIME)
+
     def len_paths(self):
         """ Returns how many elements still in pathQueue """
         return len(self.path_queue)
