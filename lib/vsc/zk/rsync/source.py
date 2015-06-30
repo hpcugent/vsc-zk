@@ -32,7 +32,9 @@ zk.rsync source
 @author: Kenneth Waegeman (Ghent University)
 """
 
+import json
 import os
+import re
 import tempfile
 import time
 
@@ -54,10 +56,14 @@ class RsyncSource(RsyncController):
     SLEEPTIME = 1  # For netcat stub
     TIME_OUT = 5  # waiting for destination
     WAITTIME = 5  # check interval of closure of other clients
+    RSYNC_FLOAT_STATS = [];
+    RSYNC_INT_STATS = [];
+
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncdepth=-1,
-                 netcat=False, dryrun=False, delete=False, excludere=None):
+                 netcat=False, dryrun=False, delete=False, checksum=False, verbose=False, 
+                 excludere=None, excl_ignusr=None):
 
         kwargs = {
             'hosts'       : hosts,
@@ -76,13 +82,35 @@ class RsyncSource(RsyncController):
         self.completed_queue = LockingQueue(self, self.znode_path(self.session + '/completedQueue'))
         self.failed_queue = LockingQueue(self, self.znode_path(self.session + '/failedQueue'))
         self.output_queue = LockingQueue(self, self.znode_path(self.session + '/outputQueue'))
+
+        self.stats_path = '%s/stats' % self.session
+        self.init_stats()
+
         if rsyncdepth < 0:
             self.log.raiseException('Invalid rsync depth: %i' % rsyncdepth)
         else:
             self.rsyncdepth = rsyncdepth
+        self.rsync_checksum = checksum
         self.rsync_delete = delete
         self.rsync_dry = dryrun
+        self.rsync_verbose = verbose
         self.excludere = excludere
+        self.excl_ignusr = excl_ignusr
+
+    def init_stats(self):
+        self.ensure_path(self.znode_path(self.stats_path))
+        self.counters = {};
+        for stat in RSYNC_INT_STATS:
+            self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)))
+        for stat in RSYNC_FLOAT_STATS:
+            self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)), default=0.0)
+
+    def output_stats(self):
+        self.stats = {}
+        for stat, counter in self.counters.iteritems():
+            self.stats[stat] = counter.value;
+        jstring = json.dumps(self.stats)
+        self.log.info('progress stats: %s' % jstring)
 
     def get_sources(self):
         """ Get all zookeeper clients in this session registered as clients """
@@ -114,7 +142,7 @@ class RsyncSource(RsyncController):
 
     def build_pathqueue(self):
         """ Build a queue of paths that needs to be rsynced """
-        self.log.debug('removing old queue and building new queue')
+        self.log.info('removing old queue and building new queue')
         if self.exists(self.path_queue.path):
             self.delete(self.path_queue.path, recursive=True)
         if self.netcat:
@@ -122,35 +150,36 @@ class RsyncSource(RsyncController):
             time.sleep(self.SLEEPTIME)
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth, exclude_re=self.excludere,
-                                     exclude_usr='root')  # Don't exclude user files
+                                     exclude_usr=self.excl_ignusr)  # By default don't exclude user files
             paths = encode_paths(tuplpaths)
         self.paths_total = len(paths)
         for path in paths:
             self.path_queue.put(path)  # Put_all can issue a zookeeper connection error with big lists
-        self.log.debug('pathqueue building finished')
+        self.log.info('pathqueue building finished')
         return self.paths_total
 
     def isempty_pathqueue(self):
         """ Returns true if all paths in pathqueue are done """
         return len(self.path_queue) == 0
 
-    def output_progress(self, todo, total):
-        self.log.info('Progress: %s of %s paths remaining, %s failed' % (todo, total, len(self.failed_queue)))
+    def output_progress(self, todo):
+        self.log.info('Progress: %s of %s paths remaining, %s failed' % (todo, self.paths_total, len(self.failed_queue)))
+        self.output_stats()
 
     def output_clients(self, total, sources):
         dests = total - sources
         sources = sources - 1
         self.log.info('Connected source (slave) clients: %s, connected destination clients: %s', sources, dests)
 
-    def wait_and_keep_progress(self, paths_total):
-        todo_paths = paths_total
+    def wait_and_keep_progress(self):
+        todo_paths = self.paths_total
         total_clients = len(self.get_all_hosts())
         total_sources = len(self.get_sources())
         while not self.isempty_pathqueue():
             todo_new = self.len_paths()
             if todo_paths != todo_new:  # Output progress state
                 todo_paths = todo_new
-                self.output_progress(todo_paths, paths_total)
+                self.output_progress(todo_paths)
             tot_clients_new = len(self.get_all_hosts())
             src_clients_new = len(self.get_sources())
             if total_clients != tot_clients_new or total_sources != src_clients_new:
@@ -197,7 +226,7 @@ class RsyncSource(RsyncController):
         self.delete(self.output_queue.path, recursive=True)
         self.remove_ready_watch()
         self.release_lock()
-        self.log.debug('Lock, Queues and watch removed')
+        self.log.info('Cleanup done: Lock, Queues and watch removed')
 
     def generate_file(self, path):
         """
@@ -238,11 +267,26 @@ class RsyncSource(RsyncController):
             self.failed_queue.put(path)
             return 0, output  # otherwise client get stuck
         else:
-            self.log.debug('Still no destination after %s tries' % attempts)
+            self.log.warning('Still no destination after %s tries' % attempts)
             self.path_queue.put(path, priority=50)  # Keep path in queue
             self.path_queue.consume()  # But stop locking it
             time.sleep(self.TIME_OUT)  # Wait before new attempt
             return 1, None
+
+    def parse_output(self, output, is_verbose):
+        """
+        Parse the rsync output stats, and when verbose, print the files marked for transmission
+        """
+        self.log.info('Full output is: %s' output)
+        if is_verbose:
+            output = output.split("%s%s" % (os.linesep, os.linesep)[1]
+        lines = output.split(os.linesep)
+        for line in lines:
+            keyval = line.split(:) #what with lines without : ?
+            key = re.sub(' ', '_', keyv[0])
+            val = keyval[1].split(' ')[0]
+            val = re.sub(',','', val)
+            self.counters[key].add(val) # check errors?
 
     def run_rsync(self, encpath, host, port):
         """
@@ -257,15 +301,20 @@ class RsyncSource(RsyncController):
             flags.append('-r')
         if self.rsync_delete:
             flags.append('--delete')
+        if self.rsync_checksum:
+            flags.append('--checksum')
+        if self.rsync_verbose:
+            flags.append('--verbose')
         if self.rsync_dry:
             flags.append('-n')
-        self.log.debug('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))
+        self.log.info('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))
 
         command = 'rsync %s %s/ rsync://%s:%s/%s' % (' '.join(flags), self.rsyncpath,
                                                      host, port, self.module)
         code, output = RunAsyncLoopLog.run(command)
         os.remove(file)
-        return code, output
+        parsed = self.parse_output(output, self.rsync_verbose)
+        return code, parsed
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
