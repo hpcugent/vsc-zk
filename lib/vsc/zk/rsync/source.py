@@ -38,6 +38,7 @@ import re
 import tempfile
 import time
 
+from kazoo.recipe.counter import Counter
 from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
 from vsc.utils.run import RunAsyncLoopLog
@@ -56,13 +57,14 @@ class RsyncSource(RsyncController):
     SLEEPTIME = 1  # For netcat stub
     TIME_OUT = 5  # waiting for destination
     WAITTIME = 5  # check interval of closure of other clients
-    RSYNC_FLOAT_STATS = [];
-    RSYNC_INT_STATS = [];
+    RSYNC_STATS = ['Number_of_files', 'Number_of_files_transferred', 'Total_file_size',
+                   'Total_transferred_file_size', 'Literal_data', 'Matched_data', 'File_list_size',
+                   'Total_bytes_sent', 'Total_bytes_received'];
 
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncdepth=-1,
-                 netcat=False, dryrun=False, delete=False, checksum=False, verbose=False, 
+                 netcat=False, dryrun=False, delete=False, checksum=False, verbose=False,
                  excludere=None, excl_ignusr=None):
 
         kwargs = {
@@ -100,17 +102,14 @@ class RsyncSource(RsyncController):
     def init_stats(self):
         self.ensure_path(self.znode_path(self.stats_path))
         self.counters = {};
-        for stat in RSYNC_INT_STATS:
-            self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)))
-        for stat in RSYNC_FLOAT_STATS:
-            self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)), default=0.0)
+        for stat in self.RSYNC_STATS:
+            self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)), default=0)
 
     def output_stats(self):
-        self.stats = {}
-        for stat, counter in self.counters.iteritems():
-            self.stats[stat] = counter.value;
+        self.stats = {k:v.value for k, v in self.counters.items()}
         jstring = json.dumps(self.stats)
         self.log.info('progress stats: %s' % jstring)
+        return jstring
 
     def get_sources(self):
         """ Get all zookeeper clients in this session registered as clients """
@@ -208,6 +207,9 @@ class RsyncSource(RsyncController):
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.path_queue.path, recursive=True)
 
+        self.output_stats()
+        self.delete(self.znode_path(self.stats_path), recursive=True)
+
         while (len(self.failed_queue) > 0):
             self.log.error('Failed Path %s' % self.failed_queue.get())
             self.failed_queue.consume()
@@ -273,28 +275,35 @@ class RsyncSource(RsyncController):
             time.sleep(self.TIME_OUT)  # Wait before new attempt
             return 1, None
 
-    def parse_output(self, output, is_verbose):
+    def parse_output(self, output):
         """
         Parse the rsync output stats, and when verbose, print the files marked for transmission
         """
-        self.log.info('Full output is: %s' output)
-        if is_verbose:
-            output = output.split("%s%s" % (os.linesep, os.linesep)[1]
-        lines = output.split(os.linesep)
-        for line in lines:
-            keyval = line.split(:) #what with lines without : ?
-            key = re.sub(' ', '_', keyv[0])
-            val = keyval[1].split(' ')[0]
-            val = re.sub(',','', val)
-            self.counters[key].add(val) # check errors?
 
-    def run_rsync(self, encpath, host, port):
+        if self.rsync_verbose:
+            outp = output.split("%s%s" % (os.linesep, os.linesep))
+            self.log.info('Verbose file list output is: %s' % outp[0])
+            del outp[0]
+            output = os.linesep.join(outp)
+
+        lines = output.splitlines()
+        for line in lines:
+            keyval = line.split(':')
+            if len(keyval) < 2:
+                self.log.debug('output line not parsed: %s' % line)
+                continue
+            key = re.sub(' ', '_', keyval[0])
+            val = keyval[1].split()[0]
+            val = re.sub(',', '', val)
+            if key not in self.RSYNC_STATS:
+                self.log.debug('output metric not recognised: %s' % key)
+                continue
+            self.counters[key] += int(val)
+
+    def get_flags(self, file, recursive):
         """
-        Runs the rsync command with or without recursion, delete or dry-run option.
-        It uses the destination module linked with this session.
+        Make an array of flags to be used
         """
-        path, recursive = decode_path(encpath)
-        file = self.generate_file(path)
         # Start rsync recursive or non recursive; archive mode (a) is equivalent to  -rlptgoD (see man rsync)
         flags = ['--stats', '--numeric-ids', '-lptgoD', '--files-from=%s' % file]
         if recursive:
@@ -307,19 +316,32 @@ class RsyncSource(RsyncController):
             flags.append('--verbose')
         if self.rsync_dry:
             flags.append('-n')
-        self.log.info('echo %s is sending %s to %s %s' % (self.whoami, path, host, port))
 
+        return flags
+
+    def run_rsync(self, encpath, host, port):
+        """
+        Runs the rsync command with or without recursion, delete or dry-run option.
+        It uses the destination module linked with this session.
+        """
+        path, recursive = decode_path(encpath)
+        file = self.generate_file(path)
+        flags = self.get_flags(file, recursive)
+
+        self.log.info('%s is sending path %s to %s %s' % (self.whoami, path, host, port))
+        self.log.debug('Used flags: "%s"' % ' '.join(flags))
         command = 'rsync %s %s/ rsync://%s:%s/%s' % (' '.join(flags), self.rsyncpath,
                                                      host, port, self.module)
         code, output = RunAsyncLoopLog.run(command)
         os.remove(file)
-        parsed = self.parse_output(output, self.rsync_verbose)
+        parsed = self.parse_output(output)
         return code, parsed
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
         time.sleep(self.SLEEPTIME)
-        command = 'echo %s is sending %s | nc %s %s' % (self.whoami, path, host, port)
+        flags = self.get_flags('nofile', 0)
+        command = 'echo %s is sending %s with flags "%s" | nc %s %s' % (self.whoami, path, ' '.join(flags), host, port)
 
         return RunAsyncLoopLog.run(command)
 

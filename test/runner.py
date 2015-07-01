@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import test.configparser as cp
 import test.depthwalk as dw
+import test.statcounter as sc
 import test.zkclient as zk
 import unittest
 
@@ -38,7 +39,7 @@ import unittest
 from vsc.utils import fancylogger
 fancylogger.logToScreen(enable=False)
 
-suite = unittest.TestSuite([x.suite() for  x in (cp, dw, zk)])
+suite = unittest.TestSuite([x.suite() for  x in (cp, dw, sc, zk)])
 
 try:
     import xmlrunner

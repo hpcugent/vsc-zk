@@ -38,6 +38,9 @@ class KazooClient(object):
     def start(self):
         pass
 
+    def ensure_path(self, path):
+        pass
+
 class Party(object):
     def __init__(self, dummy1, dummy2, dummy3, **kwargs):
         pass
@@ -50,3 +53,26 @@ class LockingQueue(object):
         pass
     def put(self, something):
         pass
+
+class Counter(object):
+    def __init__(self, client, path, default=0):
+
+        self.default = default
+        self.default_type = type(default)
+        self.value = default
+
+
+    def _change(self, value):
+        if not isinstance(value, self.default_type):
+            raise TypeError('invalid type for value change')
+        self.value = self.value + value
+        return self
+
+
+    def __add__(self, value):
+        """Add value to counter."""
+        return self._change(value)
+
+    def __sub__(self, value):
+        """Subtract value from counter."""
+        return self._change(-value)
