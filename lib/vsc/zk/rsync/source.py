@@ -103,7 +103,7 @@ class RsyncSource(RsyncController):
         self.ensure_path(self.znode_path(self.stats_path))
         self.counters = {};
         for stat in self.RSYNC_STATS:
-            self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)), default=0)
+            self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)))
 
     def output_stats(self):
         self.stats = {k:v.value for k, v in self.counters.items()}
