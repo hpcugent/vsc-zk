@@ -83,16 +83,16 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None):
     pathdepth = path.count(os.path.sep)
     for root, dirs, files in depthwalk(path, depth):
         if exclude_path(root, exclude_re, ex_uid):
-            logger.debug('excluding path %s' % root)
+            logger.info('excluding path %s' % root)
             del dirs[:]
             continue
         for name in dirs:
             subpath = os.path.join(root, name)
             if os.path.islink(subpath):  # Don't return symlinks to directories
-                logger.debug('directory symlink not added %s' % subpath)
+                logger.info('directory symlink not added %s' % subpath)
                 continue
             if exclude_path(subpath, exclude_re, ex_uid):
-                logger.debug('excluding path %s' % subpath)
+                logger.info('excluding path %s' % subpath)
                 continue
 
             subpathdepth = subpath.count(os.path.sep)

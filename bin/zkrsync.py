@@ -102,7 +102,7 @@ def init_pidfile(pidfile, session, rstype):
 def get_state(servers, kwargs):
     """Get the state of a running session"""
     rsyncP = RsyncSource(go.options.servers, **kwargs)
-    logger.info('Progress: %s of %s paths remaining' % (rsyncP.len_paths(), rsyncP.paths_total))
+    rsyncP.output_progress(rsyncP.len_paths(), rsyncP.paths_total)
     rsyncP.exit()
     sys.exit(0)
 
@@ -110,6 +110,7 @@ def do_pathsonly(options, kwargs):
     """Only build the pathqueue and return timings"""
     kwargs['rsyncdepth'] = options.depth
     kwargs['excludere'] = options.excludere
+    kwargs['excl_usr'] = options.excl_usr
     rsyncP = RsyncSource(options.servers, **kwargs)
     locked = rsyncP.acq_lock()
     if locked:
@@ -146,6 +147,9 @@ def start_source(options, kwargs):
     kwargs['dryrun'] = options.dryrun
     kwargs['delete'] = options.delete
     kwargs['excludere'] = options.excludere
+    kwargs['excl_usr'] = options.excl_usr
+    kwargs['checksum'] = options.checksum
+    kwargs['verbose'] = options.verbose
     # Start zookeeper connections
     rsyncS = RsyncSource(options.servers, **kwargs)
     # Try to retrieve session lock
@@ -157,7 +161,7 @@ def start_source(options, kwargs):
         if not watchnode:
             sys.exit(1)
         paths_total = rsyncS.build_pathqueue()
-        rsyncS.wait_and_keep_progress(paths_total)
+        rsyncS.wait_and_keep_progress()
         rsyncS.shutdown_all()
 
     else:
@@ -229,14 +233,17 @@ def main():
         'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),  # May differ between sources and dests
         # Pathbuilding (Source clients and pathsonly ) specific options:
         'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
+        'excl_usr' : ('If set, exclude paths for this user only when using excludere', None, 'store', 'root'),
         'depth'       : ('queue depth', "int", 'store', 3),
         # Source clients options; should be the same on all clients of the session!:
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
+        'checksum'    : ('run rsync with --checksum', None, 'store_true', False),
         # Individual client options
         'daemon'      : ('daemonize client', None, 'store_true', False),
         'domain'      : ('substitute domain', None, 'store', None),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
         'pidfile'     : ('Pidfile template', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.pid'),
+        'verbose'     : ('run rsync with --verbose', None, 'store_true', False),
         # Individual Destination client specific options
         'rsyncport'   : ('force port on which rsyncd binds', "int", 'store', None),
         'startport'   : ('offset to look for rsyncd ports', "int", 'store', 4444)
