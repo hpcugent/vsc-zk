@@ -65,7 +65,7 @@ class RsyncSource(RsyncController):
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncdepth=-1,
                  netcat=False, dryrun=False, delete=False, checksum=False, verbose=False,
-                 excludere=None, excl_ignusr=None):
+                 excludere=None, excl_usr=None):
 
         kwargs = {
             'hosts'       : hosts,
@@ -97,7 +97,7 @@ class RsyncSource(RsyncController):
         self.rsync_dry = dryrun
         self.rsync_verbose = verbose
         self.excludere = excludere
-        self.excl_ignusr = excl_ignusr
+        self.excl_usr = excl_usr
 
     def init_stats(self):
         self.ensure_path(self.znode_path(self.stats_path))
@@ -149,7 +149,7 @@ class RsyncSource(RsyncController):
             time.sleep(self.SLEEPTIME)
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth, exclude_re=self.excludere,
-                                     exclude_usr=self.excl_ignusr)  # By default don't exclude user files
+                                     exclude_usr=self.excl_usr)  # By default don't exclude user files
             paths = encode_paths(tuplpaths)
         self.paths_total = len(paths)
         for path in paths:

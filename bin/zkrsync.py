@@ -110,7 +110,7 @@ def do_pathsonly(options, kwargs):
     """Only build the pathqueue and return timings"""
     kwargs['rsyncdepth'] = options.depth
     kwargs['excludere'] = options.excludere
-    kwargs['excl_ignusr'] = options.excl_ignusr
+    kwargs['excl_usr'] = options.excl_usr
     rsyncP = RsyncSource(options.servers, **kwargs)
     locked = rsyncP.acq_lock()
     if locked:
@@ -147,7 +147,7 @@ def start_source(options, kwargs):
     kwargs['dryrun'] = options.dryrun
     kwargs['delete'] = options.delete
     kwargs['excludere'] = options.excludere
-    kwargs['excl_ignusr'] = options.excl_ignusr
+    kwargs['excl_usr'] = options.excl_usr
     kwargs['checksum'] = options.checksum
     kwargs['verbose'] = options.verbose
     # Start zookeeper connections
@@ -233,7 +233,7 @@ def main():
         'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),  # May differ between sources and dests
         # Pathbuilding (Source clients and pathsonly ) specific options:
         'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
-        'excl_ignusr' : ('If set, ignore paths for this user only when excluding from pathbuilding', None, 'store', 'root'),
+        'excl_usr' : ('If set, exclude paths for this user only when using excludere', None, 'store', 'root'),
         'depth'       : ('queue depth', "int", 'store', 3),
         # Source clients options; should be the same on all clients of the session!:
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
