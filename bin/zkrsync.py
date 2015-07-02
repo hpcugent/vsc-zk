@@ -252,7 +252,7 @@ def main():
         'startport'   : ('offset to look for rsyncd ports', "int", 'store', 4444),
         # Arbitrary rsync options: comma seperate list. Use a colon to seperate key and values
         'arbitopts'   : ('Arbitrary rsync source client options: comma seperate list. ' +
-                             'Use a colon to seperate key and values. Beware this values are not checked.',
+                             'Use a colon to seperate key and values. Beware these keys/values are not checked.',
                              'strlist', 'store', None),
 
     }

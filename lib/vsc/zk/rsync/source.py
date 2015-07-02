@@ -325,8 +325,8 @@ class RsyncSource(RsyncController):
             arbopts = []
             for arbopt in self.rsync_arbitopts:
                 opt = "--%s" % re.sub(':', '=', arbopt, 1)
-                self.log.warning('Adding unchecked flag %s' % opt)
                 arbopts.append(opt)
+            self.log.warning('Adding unchecked flags %s' % ' '.join(arbopts))
             flags.extend(arbopts)
         return flags
 
