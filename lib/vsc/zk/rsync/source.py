@@ -320,10 +320,14 @@ class RsyncSource(RsyncController):
             flags.append('--verbose')
         if self.rsync_dry:
             flags.append('-n')
+        # This should always be processed last
         if self.rsync_arbitopts:
+            arbopts = []
             for arbopt in self.rsync_arbitopts:
-                flags.append("--%s" % re.sub(':', '=', arbopt))
-
+                opt = "--%s" % re.sub(':', '=', arbopt, 1)
+                self.log.warning('Adding unchecked flag %s' % opt)
+                arbopts.append(opt)
+            flags.extend(arbopts)
         return flags
 
     def run_rsync(self, encpath, host, port):
