@@ -16,7 +16,7 @@ A zookeeper server with proper ACLs to a base znode is required.
 
 If none is available, installation can be performed as follows:
 
-zkversion=3.4.5
+zkversion=3.4.6
 basepath=/tmp/$USER # is not permanent
 chmod 700 $basepath
 

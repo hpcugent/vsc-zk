@@ -144,11 +144,13 @@ def start_destination(options, kwargs):
 def start_source(options, kwargs):
     """ Start a rsync source"""
     kwargs['rsyncdepth'] = options.depth
+    kwargs['arbitopts'] = options.arbitopts
+    kwargs['checksum'] = options.checksum
     kwargs['dryrun'] = options.dryrun
     kwargs['delete'] = options.delete
     kwargs['excludere'] = options.excludere
     kwargs['excl_usr'] = options.excl_usr
-    kwargs['checksum'] = options.checksum
+    kwargs['hardlinks'] = options.hardlinks
     kwargs['verbose'] = options.verbose
     # Start zookeeper connections
     rsyncS = RsyncSource(options.servers, **kwargs)
@@ -233,11 +235,12 @@ def main():
         'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),  # May differ between sources and dests
         # Pathbuilding (Source clients and pathsonly ) specific options:
         'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
-        'excl_usr' : ('If set, exclude paths for this user only when using excludere', None, 'store', 'root'),
+        'excl_usr'    : ('If set, exclude paths for this user only when using excludere', None, 'store', 'root'),
         'depth'       : ('queue depth', "int", 'store', 3),
         # Source clients options; should be the same on all clients of the session!:
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
         'checksum'    : ('run rsync with --checksum', None, 'store_true', False),
+        'hardlinks'   : ('run rsync with --hard-links', None, 'store_true', False),
         # Individual client options
         'daemon'      : ('daemonize client', None, 'store_true', False),
         'domain'      : ('substitute domain', None, 'store', None),
@@ -246,7 +249,10 @@ def main():
         'verbose'     : ('run rsync with --verbose', None, 'store_true', False),
         # Individual Destination client specific options
         'rsyncport'   : ('force port on which rsyncd binds', "int", 'store', None),
-        'startport'   : ('offset to look for rsyncd ports', "int", 'store', 4444)
+        'startport'   : ('offset to look for rsyncd ports', "int", 'store', 4444),
+        # Arbitrary rsync options: comma seperate list. Use a colon to seperate key and values
+        'arbitopts'   : ('Arbitrary rsync source client options. Be careful', 'strlist', 'store', None),
+
     }
 
     go = simple_option(options)
