@@ -106,7 +106,7 @@ class RsyncSource(RsyncController):
             self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)))
 
     def output_stats(self):
-        self.stats = {k:v.value for k, v in self.counters.items()}
+        self.stats = dict([(k,v.value) for k,v in self.counters.items()]) 
         jstring = json.dumps(self.stats)
         self.log.info('progress stats: %s' % jstring)
         return jstring
