@@ -64,8 +64,8 @@ class RsyncSource(RsyncController):
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncdepth=-1,
-                 netcat=False, dryrun=False, delete=False, checksum=False, verbose=False,
-                 excludere=None, excl_usr=None):
+                 netcat=False, dryrun=False, delete=False, checksum=False, hardlinks=False, verbose=False,
+                 excludere=None, excl_usr=None, arbitopts=[]):
 
         kwargs = {
             'hosts'       : hosts,
@@ -92,9 +92,11 @@ class RsyncSource(RsyncController):
             self.log.raiseException('Invalid rsync depth: %i' % rsyncdepth)
         else:
             self.rsyncdepth = rsyncdepth
+        self.rsync_arbitopts = arbitopts
         self.rsync_checksum = checksum
         self.rsync_delete = delete
         self.rsync_dry = dryrun
+        self.rsync_hardlinks = hardlinks
         self.rsync_verbose = verbose
         self.excludere = excludere
         self.excl_usr = excl_usr
@@ -106,7 +108,7 @@ class RsyncSource(RsyncController):
             self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)))
 
     def output_stats(self):
-        self.stats = dict([(k,v.value) for k,v in self.counters.items()]) 
+        self.stats = dict([(k, v.value) for k, v in self.counters.items()])
         jstring = json.dumps(self.stats)
         self.log.info('progress stats: %s' % jstring)
         return jstring
@@ -312,11 +314,20 @@ class RsyncSource(RsyncController):
             flags.append('--delete')
         if self.rsync_checksum:
             flags.append('--checksum')
+        if self.rsync_hardlinks:
+            flags.append('--hard-links')
         if self.rsync_verbose:
             flags.append('--verbose')
         if self.rsync_dry:
             flags.append('-n')
-
+        # This should always be processed last
+        if self.rsync_arbitopts:
+            arbopts = []
+            for arbopt in self.rsync_arbitopts:
+                opt = "--%s" % re.sub(':', '=', arbopt, 1)
+                arbopts.append(opt)
+            self.log.warning('Adding unchecked flags %s' % ' '.join(arbopts))
+            flags.extend(arbopts)
         return flags
 
     def run_rsync(self, encpath, host, port):
