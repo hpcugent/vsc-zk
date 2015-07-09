@@ -206,6 +206,10 @@ class RsyncSource(RsyncController):
 
     def cleanup(self):
         """ Remove all session nodes in zookeeper after first logging the output queues """
+
+        while (len(self.path_queue) > 0):
+            self.log.warning('Unfinished Path %s' % self.path_queue.get())
+            self.path_queue.consume()
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.path_queue.path, recursive=True)
 
