@@ -242,6 +242,7 @@ def main():
         'checksum'    : ('run rsync with --checksum', None, 'store_true', False),
         'hardlinks'   : ('run rsync with --hard-links', None, 'store_true', False),
         # Individual client options
+        'verifypath'  : ('Check basepath exists while running', None, 'store_false', True),
         'daemon'      : ('daemonize client', None, 'store_true', False),
         'domain'      : ('substitute domain', None, 'store', None),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
@@ -268,6 +269,7 @@ def main():
         'auth_data'   : acreds,
         'rsyncpath'   : go.options.rsyncpath,
         'netcat'      : go.options.netcat,
+        'verifypath'  : go.options.verifypath,
         }
 
     if go.options.daemon:

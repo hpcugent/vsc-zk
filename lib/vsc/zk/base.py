@@ -162,7 +162,7 @@ class VscKazooClient(KazooClient):
 
     def set_znode(self, znode=None, value=''):
         znode_path = self.znode_path(znode)
-        return self.set(znode_path, value)
+        return self.set(znode_path, str(value))
 
     def get_znode(self, znode=None):
         znode_path = self.znode_path(znode)
