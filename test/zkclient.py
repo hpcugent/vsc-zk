@@ -99,6 +99,32 @@ class zkClientTest(TestCase):
         filec = open(filen, "r").read()
         self.assertMultiLineEqual(filec, res)
 
+    def test_activate_and_pausing_dests(self):
+        """ Test the pausing , disabling and activation of destinations """
+        zkclient = RsyncDestination('dummy', rsyncpath='/tmp', session='new')
+        zkclient.pause()
+        val, dum = zkclient.get('/admin/rsync/new/dests/test')
+        self.assertEqual(val, '')
+        zkclient.activate()
+        val, dum = zkclient.get('/admin/rsync/new/dests/test')
+        self.assertEqual(val, 'active')
+        zkclient.pause()
+        val, dum = zkclient.get('/admin/rsync/new/dests/test')
+        self.assertEqual(val, 'paused')
+
+        zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
+        self.assertFalse(zkclient.dest_is_sane('test'))
+        val, dum = zkclient.get('/admin/rsync/new/dests/test')
+        self.assertEqual(val, '')
+        zkclient.set('/admin/rsync/new/dests/test', 'active')
+        self.assertTrue(zkclient.dest_is_sane('test'))
+        val, dum = zkclient.get('/admin/rsync/new/dests/test')
+        self.assertEqual(val, 'active')
+        zkclient.set('/admin/rsync/new/dests/test', 'paused')
+        self.assertFalse(zkclient.dest_is_sane('test'))
+        val, dum = zkclient.get('/admin/rsync/new/dests/test')
+        self.assertEqual(val, 'disabled')
+
 def suite():
      """ returns all the testcases in this module """
      return TestLoader().loadTestsFromTestCase(zkClientTest)
@@ -133,7 +159,22 @@ if __name__ == '__main__':
 #     print zkclient.module
 #     print zkclient.watchpath
 
+
 #     zkclient = RsyncDestination('dummy', rsyncpath='/tmp', session='new')
-#     filen = zkclient.generate_daemon_config()
-#     filec = open(filen, "r").read()
-#     print filec
+#     zkclient.pause()
+#     print zkclient.get('/admin/rsync/new/dests/test')
+#     zkclient.activate()
+#     print zkclient.get('/admin/rsync/new/dests/test')
+#     zkclient.pause()
+#     print zkclient.get('/admin/rsync/new/dests/test')
+#
+#     zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
+#     print zkclient.dest_is_sane('test')
+#     print zkclient.get('/admin/rsync/new/dests/test')
+#     zkclient.set('/admin/rsync/new/dests/test', 'active')
+#     print zkclient.dest_is_sane('test')
+#     print zkclient.get('/admin/rsync/new/dests/test')
+#     zkclient.set('/admin/rsync/new/dests/test', 'paused')
+#     print zkclient.dest_is_sane('test')
+#     print zkclient.get('/admin/rsync/new/dests/test')
+

@@ -391,6 +391,10 @@ class RsyncSource(RsyncController):
         return self.dest_state(dest, self.STATUS)
 
     def handle_dest_state(self, dest, destpath, current_state):
+        """ 
+        Disable destination by consuming it from queue when paused and return false
+        If destination is active, return true
+        """
         if current_state == self.STATE_PAUSED:
             self.set_znode(destpath, self.STATE_DISABLED)
             self.dest_queue.consume()
