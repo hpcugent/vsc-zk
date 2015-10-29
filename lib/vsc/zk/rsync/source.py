@@ -64,7 +64,7 @@ class RsyncSource(RsyncController):
 
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, rsyncdepth=-1,
+                 auth_data=None, rsyncpath=None, rsyncdepth=-1, rsubpaths=[],
                  netcat=False, dryrun=False, delete=False, checksum=False, hardlinks=False, verbose=False,
                  excludere=None, excl_usr=None, verifypath=True, arbitopts=[]):
 
@@ -102,6 +102,7 @@ class RsyncSource(RsyncController):
         self.rsync_verbose = verbose
         self.excludere = excludere
         self.excl_usr = excl_usr
+        self.rsubpaths = rsubpaths
 
     def init_stats(self):
         self.ensure_path(self.znode_path(self.stats_path))
@@ -153,7 +154,7 @@ class RsyncSource(RsyncController):
             time.sleep(self.SLEEPTIME)
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth, exclude_re=self.excludere,
-                                     exclude_usr=self.excl_usr)  # By default don't exclude user files
+                                     exclude_usr=self.excl_usr, rsubpaths=self.rsubpaths)  # By default don't exclude user files
             paths = encode_paths(tuplpaths)
         self.paths_total = len(paths)
         for path in paths:
@@ -256,16 +257,18 @@ class RsyncSource(RsyncController):
 
     def attempt_run(self, path, attempts=3):
         """ Try to run a command x times, on failure add to failed queue """
-        dest = self.get_a_dest(attempts)  # Keeps it if not consuming
-        if not dest:
-            self.path_queue.put(path, priority=50)  # Keep path in queue
-            self.path_queue.consume()  # But stop locking it
-            time.sleep(self.TIME_OUT)  # Wait before new attempt
-            return 1, None
 
-        port, host, other = tuple(dest.split(':', 2))
         attempt = 1
         while (attempt <= attempts):
+
+            dest = self.get_a_dest(attempts)  # Keeps it if not consuming
+            if not dest or not self.basepath_ok():
+                self.path_queue.put(path, priority=50)  # Keep path in queue
+                self.path_queue.consume()  # But stop locking it
+                time.sleep(self.TIME_OUT)  # Wait before new attempt
+                return 1, None
+            port, host, other = tuple(dest.split(':', 2))
+
             if self.netcat:
                 code, output = self.run_netcat(path, host, port)
             else:

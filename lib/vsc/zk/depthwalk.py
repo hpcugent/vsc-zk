@@ -65,7 +65,7 @@ def exclude_path(path, exclude_re, ex_uid):
                 return regfound
         return False
 
-def get_pathlist(path, depth, exclude_re=None, exclude_usr=None):
+def build_paths(path, depth, exclude_re=None, exclude_usr=None):
     """
     Returns a list of (path, recursive) tuples under path with the maximum depth specified.
     Depth 0 is the basepath itself. 
@@ -101,6 +101,35 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None):
             else:
                 recursive = 0
             pathlist.append((subpath, recursive))
+
+    logger.debug("pathlist for %s is %s" % (path, pathlist))
+
+    return pathlist
+
+def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=[]):
+    """
+    Returns a list of (path, recursive) tuples under path with the maximum depth specified.
+    Depth 0 is the basepath itself. 
+    Recursive is True if and only if it is exactly on the depth specified.
+    Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders) 
+    if subpaths are given with rsubpaths, these are also walked with the given depth, and merged into the list
+    """
+
+    pathlist = build_paths(path, depth, exclude_re, exclude_usr)
+
+    if rsubpaths:
+        pathdict = dict(pathlist)
+        for subpath in rsubpaths:
+            if not subpath.startswith(path):
+                subpath = '%s/%s' % (path, subpath)
+            if subpath not in pathdict:
+                logger.raiseException('%s is not in the pathlist of %s with depth %d!' % (subpath, path, depth))
+            else:
+                sublist = build_paths(subpath, depth, exclude_re, exclude_usr)
+                pathdict.update(sublist)
+
+        pathlist = pathdict.items()
+
     logger.debug("pathlist is %s" % pathlist)
     return pathlist
 
