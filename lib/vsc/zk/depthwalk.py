@@ -113,6 +113,7 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=[]):
     Recursive is True if and only if it is exactly on the depth specified.
     Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders) 
     if subpaths are given with rsubpaths, these are also walked with the given depth, and merged into the list
+    Subpaths should already be in the base path pathlist.
     """
 
     pathlist = build_paths(path, depth, exclude_re, exclude_usr)
@@ -126,7 +127,7 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=[]):
                 logger.raiseException('%s is not in the pathlist of %s with depth %d!' % (subpath, path, depth))
             else:
                 sublist = build_paths(subpath, depth, exclude_re, exclude_usr)
-                pathdict.update(sublist)
+                pathdict.update(sublist)  # This suffice because the subpath is always in the pathlist
 
         pathlist = pathdict.items()
 
