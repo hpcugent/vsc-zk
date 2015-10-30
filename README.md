@@ -26,7 +26,7 @@ A zookeeper server with proper ACLs to a base znode (zookeeper node) is required
 
 If no such server is available, installation can be performed as follows:
 ~~~~bash
-zkversion=3.4.5
+zkversion=3.4.6
 basepath=`mktemp -d` # not permanent, choose other directory as desired
 
 mkdir -p $basepath/zk/server/data
