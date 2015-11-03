@@ -237,7 +237,7 @@ def main():
         'dryrun'      : ('run rsync in dry run mode', None, 'store_true', False, 'n'),
         'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),  # May differ between sources and dests
         # Pathbuilding (Source clients and pathsonly ) specific options:
-        'rsubpaths'   : ('rsync subpaths', 'strlist', 'store', None),
+        'rsubpaths'   : ('rsync subpaths, specified as <depth>_<path>, with deepest paths last', 'strlist', 'store', None),
         'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
         'excl_usr'    : ('If set, exclude paths for this user only when using excludere', None, 'store', 'root'),
         'depth'       : ('queue depth', "int", 'store', 3),
