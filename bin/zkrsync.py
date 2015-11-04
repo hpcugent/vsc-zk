@@ -111,6 +111,8 @@ def do_pathsonly(options, kwargs):
     kwargs['rsyncdepth'] = options.depth
     kwargs['excludere'] = options.excludere
     kwargs['excl_usr'] = options.excl_usr
+    kwargs['rsubpaths'] = options.rsubpaths
+
     rsyncP = RsyncSource(options.servers, **kwargs)
     locked = rsyncP.acq_lock()
     if locked:
@@ -144,6 +146,7 @@ def start_destination(options, kwargs):
 def start_source(options, kwargs):
     """ Start a rsync source"""
     kwargs['rsyncdepth'] = options.depth
+    kwargs['rsubpaths'] = options.rsubpaths
     kwargs['arbitopts'] = options.arbitopts
     kwargs['checksum'] = options.checksum
     kwargs['dryrun'] = options.dryrun
@@ -234,6 +237,7 @@ def main():
         'dryrun'      : ('run rsync in dry run mode', None, 'store_true', False, 'n'),
         'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),  # May differ between sources and dests
         # Pathbuilding (Source clients and pathsonly ) specific options:
+        'rsubpaths'   : ('rsync subpaths, specified as <depth>_<path>, with deepest paths last', 'strlist', 'store', None),
         'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
         'excl_usr'    : ('If set, exclude paths for this user only when using excludere', None, 'store', 'root'),
         'depth'       : ('queue depth', "int", 'store', 3),
@@ -242,6 +246,7 @@ def main():
         'checksum'    : ('run rsync with --checksum', None, 'store_true', False),
         'hardlinks'   : ('run rsync with --hard-links', None, 'store_true', False),
         # Individual client options
+        'verifypath'  : ('Check basepath exists while running', None, 'store_false', True),
         'daemon'      : ('daemonize client', None, 'store_true', False),
         'domain'      : ('substitute domain', None, 'store', None),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
@@ -268,6 +273,7 @@ def main():
         'auth_data'   : acreds,
         'rsyncpath'   : go.options.rsyncpath,
         'netcat'      : go.options.netcat,
+        'verifypath'  : go.options.verifypath,
         }
 
     if go.options.daemon:

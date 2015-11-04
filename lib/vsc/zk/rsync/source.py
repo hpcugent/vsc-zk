@@ -57,15 +57,16 @@ class RsyncSource(RsyncController):
     SLEEPTIME = 1  # For netcat stub
     TIME_OUT = 5  # waiting for destination
     WAITTIME = 5  # check interval of closure of other clients
+    CHECK_WAIT = 20  # wait for path to be available
     RSYNC_STATS = ['Number_of_files', 'Number_of_files_transferred', 'Total_file_size',
                    'Total_transferred_file_size', 'Literal_data', 'Matched_data', 'File_list_size',
                    'Total_bytes_sent', 'Total_bytes_received'];
 
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, rsyncdepth=-1,
+                 auth_data=None, rsyncpath=None, rsyncdepth=-1, rsubpaths=[],
                  netcat=False, dryrun=False, delete=False, checksum=False, hardlinks=False, verbose=False,
-                 excludere=None, excl_usr=None, arbitopts=[]):
+                 excludere=None, excl_usr=None, verifypath=True, arbitopts=[]):
 
         kwargs = {
             'hosts'       : hosts,
@@ -74,6 +75,7 @@ class RsyncSource(RsyncController):
             'default_acl' : default_acl,
             'auth_data'   : auth_data,
             'rsyncpath'   : rsyncpath,
+            'verifypath'  : verifypath,
             'netcat'      : netcat
         }
         super(RsyncSource, self).__init__(**kwargs)
@@ -100,6 +102,7 @@ class RsyncSource(RsyncController):
         self.rsync_verbose = verbose
         self.excludere = excludere
         self.excl_usr = excl_usr
+        self.rsubpaths = rsubpaths
 
     def init_stats(self):
         self.ensure_path(self.znode_path(self.stats_path))
@@ -151,7 +154,7 @@ class RsyncSource(RsyncController):
             time.sleep(self.SLEEPTIME)
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth, exclude_re=self.excludere,
-                                     exclude_usr=self.excl_usr)  # By default don't exclude user files
+                                     exclude_usr=self.excl_usr, rsubpaths=self.rsubpaths)  # By default don't exclude user files
             paths = encode_paths(tuplpaths)
         self.paths_total = len(paths)
         for path in paths:
@@ -254,16 +257,18 @@ class RsyncSource(RsyncController):
 
     def attempt_run(self, path, attempts=3):
         """ Try to run a command x times, on failure add to failed queue """
-        dest = self.get_a_dest(attempts)  # Keeps it if not consuming
-        if not dest:
-            self.path_queue.put(path, priority=50)  # Keep path in queue
-            self.path_queue.consume()  # But stop locking it
-            time.sleep(self.TIME_OUT)  # Wait before new attempt
-            return 1, None
 
-        port, host, other = tuple(dest.split(':', 2))
         attempt = 1
         while (attempt <= attempts):
+
+            dest = self.get_a_dest(attempts)  # Keeps it if not consuming
+            if not dest or not self.basepath_ok():
+                self.path_queue.put(path, priority=50)  # Keep path in queue
+                self.path_queue.consume()  # But stop locking it
+                time.sleep(self.TIME_OUT)  # Wait before new attempt
+                return 1, None
+            port, host, other = tuple(dest.split(':', 2))
+
             if self.netcat:
                 code, output = self.run_netcat(path, host, port)
             else:
@@ -384,6 +389,26 @@ class RsyncSource(RsyncController):
         self.log.warning('Still no destination after %s tries' % attempts)
         return None
 
+    def dest_is_sane(self, dest):
+        """ Lock destination state, fetch it and disable if paused """
+        return self.dest_state(dest, self.STATUS)
+
+    def handle_dest_state(self, dest, destpath, current_state):
+        """ 
+        Disable destination by consuming it from queue when paused and return false
+        If destination is active, return true
+        """
+        if current_state == self.STATE_PAUSED:
+            self.set_znode(destpath, self.STATE_DISABLED)
+            self.dest_queue.consume()
+            self.log.debug('Destination %s was disabled and removed from queue' % dest)
+            return False
+        elif current_state == self.STATE_ACTIVE:
+            return True
+        else:
+            self.log.error('Destination %s is in an unknown state %s' % (dest, current_state))
+            return False
+
     def try_a_dest(self, timeout):
         """ 
         Try to get a destination.
@@ -398,6 +423,9 @@ class RsyncSource(RsyncController):
                 self.log.debug('destination is not found in party')
                 self.dest_queue.consume()
                 return None
+            elif not self.dest_is_sane(whoami):
+                self.log.debug('recieved destination was paused')
+                return None
             else:
                 portmap = '%s/portmap/%s' % (self.session, whoami)
                 lport, stat = self.get_znode(portmap)
@@ -409,6 +437,11 @@ class RsyncSource(RsyncController):
 
     def rsync(self, timeout=None):
         """ Get a destination, a path and call a new rsync iteration """
+        if self.verifypath:
+            if not self.basepath_ok():
+                self.log.warning('Basepath not available, waiting')
+                time.sleep(self.CHECK_WAIT)
+                return None
         path = self.path_queue.get(timeout)
         if path:
             if self.rsync_path(path):

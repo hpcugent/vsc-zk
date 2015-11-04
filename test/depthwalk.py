@@ -44,6 +44,10 @@ class DepthWalkTest(TestCase):
         """ Create a test direcory structure """
         self.basedir = tempfile.mkdtemp()
         dirs = ['a1', 'b1', 'c1', 'a1/aa2', 'a1/ab2', 'a1/ac2', 'b1/ba2', 'b1/bb2', 'a1/ab2/aa3']
+        extradirs = ['a1/ab2/aa3/sub1', 'a1/ab2/aa3/sub2', 'a1/ab2/aa3/sub2/sub21',
+                     'a1/ab2/aa3/sub2/sub21/sub211', 'a1/ab2/aa3/sub2/sub21/sub211/sub2112']
+        dirs.extend(extradirs)
+
         for dir in dirs:
             path = '%s/%s' % (self.basedir, dir)
             os.mkdir(path)
@@ -81,6 +85,40 @@ class DepthWalkTest(TestCase):
                ('/tree/a1/ab2/aa3', 1)]
         genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec) for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, exclude_usr=None)]
         self.assertListEqual(genlist , res)
+
+    def test_get_pathlist_with_subpaths(self):
+        """ Tests the functionality of get_pathlist with an exclude rule and subpaths"""
+        regex = re.compile('/\.snapshots(/.*|$)')
+        res = [('/tree', 0), ('/tree/c1', 0), ('/tree/b1', 0), ('/tree/a1', 0), ('/tree/b1/bb2', 0),
+               ('/tree/b1/ba2', 0), ('/tree/a1/ac2', 0), ('/tree/a1/ab2', 0), ('/tree/a1/aa2', 0),
+               ('/tree/a1/ab2/aa3', 0), ('/tree/a1/ab2/aa3/sub1', 0), ('/tree/a1/ab2/aa3/sub2', 0),
+               ('/tree/a1/ab2/aa3/sub2/sub21', 0), ('/tree/a1/ab2/aa3/sub2/sub21/sub211', 1), ]
+
+        subpath1 = '3_a1/ab2/aa3'
+        subpath2 = '3_a1/ab2/aa3/sub2'
+        self.assertRaises(Exception, dw.get_pathlist, self.basedir, 3, exclude_re=regex, exclude_usr=None, rsubpaths=['3_/a1/ab2/aa3'])
+        self.assertRaises(Exception, dw.get_pathlist, self.basedir, 2, exclude_re=regex, exclude_usr=None, rsubpaths=['3_a1/ab2/aa3'])
+        self.assertRaises(Exception, dw.get_pathlist, self.basedir, 3, exclude_re=regex, exclude_usr=None, rsubpaths=['1_a1'])
+
+        genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec) for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1])]
+        self.assertListEqual(sorted(genlist), sorted(res))
+
+        genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec)
+                   for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1, subpath2])]
+        res.remove(('/tree/a1/ab2/aa3/sub2/sub21/sub211', 1))
+        res.extend([('/tree/a1/ab2/aa3/sub2/sub21/sub211', 0), ('/tree/a1/ab2/aa3/sub2/sub21/sub211/sub2112', 1)])
+        self.assertListEqual(sorted(genlist), sorted(res))
+
+        subpath2 = '4_a1/ab2/aa3/sub2'
+        genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec)
+                   for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1, subpath2])]
+        res.remove(('/tree/a1/ab2/aa3/sub2/sub21/sub211/sub2112', 1))
+        res.append(('/tree/a1/ab2/aa3/sub2/sub21/sub211/sub2112', 0))
+        self.assertListEqual(sorted(genlist), sorted(res))
+
+        subpath1 = '3_a1/ab2'
+        subpath2 = '3_a1/ab2/aa3'
+        self.assertRaises(Exception, dw.get_pathlist, self.basedir, 3, exclude_re=regex, exclude_usr=None, rsubpaths=[subpath2, subpath1])
 
     def test_encode_paths(self):
         """ Test the encoding of a pathlist """

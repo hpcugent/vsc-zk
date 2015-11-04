@@ -43,10 +43,14 @@ from vsc.zk.rsync.controller import RsyncController
 
 class RunDestination(RunWatchLoopLog):
     """When zookeeperclient is ready, stop"""
+
+    WAITLOOPS = 10
+
     def __init__(self, cmd, **kwargs):
 
         super(RunDestination, self).__init__(cmd, **kwargs)
         self.registered = False
+        self.paused = False
 
     def _loop_process_output(self, output):
         """Process the output that is read in blocks
@@ -55,9 +59,23 @@ class RunDestination(RunWatchLoopLog):
         When watch is ready, stop
         """
         super(RunDestination, self)._loop_process_output(output)
-        if not self.registered and self._loop_count > 2:
+
+        if self.watchclient.verifypath and (self._loop_count % self.WAITLOOPS == 0):
+            if self.watchclient.basepath_ok():
+                if self.paused or not self.registered:
+                    self.watchclient.activate()
+                    self.paused = False
+            else:
+                self.log.info('Basepath not available')
+                if not self.paused:
+                    self.watchclient.pause()
+                    self.paused = True
+
+        if not self.registered and self._loop_count > 2 and not self.paused:
             self.watchclient.add_to_queue()
             self.registered = True
+
+
 
 
 class RsyncDestination(RsyncController):
@@ -69,7 +87,7 @@ class RsyncDestination(RsyncController):
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncport=None, startport=4444,
-                 netcat=False, domain=None):
+                 netcat=False, domain=None, verifypath=True):
 
         kwargs = {
             'hosts'       : hosts,
@@ -78,6 +96,7 @@ class RsyncDestination(RsyncController):
             'default_acl' : default_acl,
             'auth_data'   : auth_data,
             'rsyncpath'   : rsyncpath,
+            'verifypath'  : verifypath,
             'netcat'      : netcat,
         }
 
@@ -148,6 +167,35 @@ class RsyncDestination(RsyncController):
             self.set_znode(portmap, str(port))
 
         self.port = port
+
+    def set_paused(self, destpath, old_state):
+        """ Set the destination state to paused """
+        if old_state == self.STATE_ACTIVE:
+            self.set_znode(destpath, self.STATE_PAUSED)
+            self.log.info('Destination %s was paused' % self.whoami)
+        elif not old_state:
+            self.log.info('Destination %s not yet activated' % self.whoami)
+        else:
+            self.log.warning('Wanted to pause destination %s, but old state was %s' % (self.whoami, old_state))
+
+    def set_active(self, destpath, old_state):
+        """ Set the destination state to active, requeue when needed """
+
+        if not old_state or old_state == self.STATE_PAUSED:
+            self.set_znode(destpath, self.STATE_ACTIVE)
+            self.log.info('Destination %s was activated' % self.whoami)
+        elif old_state == self.STATE_DISABLED:
+            self.set_znode(destpath, self.STATE_ACTIVE)
+            self.add_to_queue()
+            self.log.info('Destination %s was activated' % self.whoami)
+        else:
+            self.log.warning('Wanted to activate destination %s, but old state was %s' % (self.whoami, old_state))
+
+    def activate(self):
+        self.dest_state(self.whoami, self.STATE_ACTIVE)
+
+    def pause(self):
+        self.dest_state(self.whoami, self.STATE_PAUSED)
 
     def run_rsync(self):
         """ Runs the rsync command """

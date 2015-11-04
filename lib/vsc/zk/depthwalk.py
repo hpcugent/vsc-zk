@@ -65,7 +65,7 @@ def exclude_path(path, exclude_re, ex_uid):
                 return regfound
         return False
 
-def get_pathlist(path, depth, exclude_re=None, exclude_usr=None):
+def build_paths(path, depth, exclude_re=None, exclude_usr=None):
     """
     Returns a list of (path, recursive) tuples under path with the maximum depth specified.
     Depth 0 is the basepath itself. 
@@ -101,6 +101,48 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None):
             else:
                 recursive = 0
             pathlist.append((subpath, recursive))
+
+    logger.debug("pathlist for %s is %s" % (path, pathlist))
+    logger.info('pathlist of path %s contains %d entries' % (path, len(pathlist)))
+
+    return pathlist
+
+def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=[]):
+    """
+    Returns a list of (path, recursive) tuples under path with the maximum depth specified.
+    Depth 0 is the basepath itself. 
+    Recursive is True if and only if it is exactly on the depth specified.
+    Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders) 
+    if subpaths are given with rsubpaths, these are also walked with the given depth, and merged into the list
+    Subpaths should already be in the base path pathlist.
+    """
+
+    path = path.rstrip(os.path.sep)
+    pathlist = build_paths(path, depth, exclude_re, exclude_usr)
+
+    if rsubpaths:
+        pathdict = dict(pathlist)
+        pathdepth = path.count(os.path.sep)
+        depthlevel = pathdepth + depth
+        for encsubpath in rsubpaths:
+            subdepth, subpath = encsubpath.split('_', 1)
+            subpath = subpath.rstrip(os.path.sep)
+            if not subpath.startswith(path):
+                subpath = '%s/%s' % (path, subpath)
+            if subpath not in pathdict:
+                logger.raiseException('%s is not in the pathlist of %s with depth %d!' % (subpath, path, depth))
+
+            subpathdepth = subpath.count(os.path.sep)
+            newdepth = subpathdepth + int(subdepth)
+            if newdepth < depthlevel :  # deepest paths should be specified last
+                logger.raiseException('depthlevel %d for subpath %s is not as deep as current depthlevel %d!' % (newdepth, subpath, depthlevel))
+            else:
+                depthlevel = newdepth
+                sublist = build_paths(subpath, int(subdepth), exclude_re, exclude_usr)
+                pathdict.update(sublist)  # This suffice because the subpath is always in the pathlist
+
+        pathlist = pathdict.items()
+
     logger.debug("pathlist is %s" % pathlist)
     return pathlist
 

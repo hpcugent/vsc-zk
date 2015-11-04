@@ -47,9 +47,13 @@ class RsyncController(VscKazooClient):
     BASE_ZNODE = '/admin/rsync'
     BASE_PARTIES = ['allsd']
     RSDIR = '/tmp/zkrsync'
+    STATE_PAUSED = 'paused'
+    STATE_ACTIVE = 'active'
+    STATE_DISABLED = 'disabled'
+    STATUS = 'status'
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, netcat=None):
+                 auth_data=None, rsyncpath=None, netcat=None, verifypath=True):
 
         kwargs = {
             'hosts'       : hosts,
@@ -72,6 +76,7 @@ class RsyncController(VscKazooClient):
 
         self.rsyncpath = rsyncpath
         self.dest_queue = LockingQueue(self, self.znode_path(self.session + '/destQueue'))
+        self.verifypath = verifypath
 
     def get_all_hosts(self):
         """Return all zookeeper clients in this rsync session party"""
@@ -79,3 +84,27 @@ class RsyncController(VscKazooClient):
         for host in self.parties['allsd']:
             hosts.append(host)
         return hosts
+
+    def basepath_ok(self):
+        return os.path.isdir(self.rsyncpath)
+
+    def dest_state(self, dest, state):
+        """ Set the destination to a different state """
+        destdir = '%s/dests' % self.session
+        self.ensure_path(self.znode_path(destdir))
+        lock = self.Lock(self.znode_path(self.session + '/destslock'), dest)
+        destpath = '%s/%s' % (destdir, dest)
+        with lock:
+            if not self.exists_znode(destpath):
+                self.make_znode(destpath, ephemeral=True)
+            current_state, stat = self.get_znode(destpath)
+            self.log.debug('Current state is %s, requested state is %s' % (current_state, state))
+            if state == self.STATE_PAUSED:
+                self.set_paused(destpath, current_state)
+            elif state == self.STATE_ACTIVE:
+                self.set_active(destpath, current_state)
+            elif state == self.STATUS:
+                return self.handle_dest_state(dest, destpath, current_state)
+            else:
+                self.log.error('No valid state: %s ' % state)
+                return None

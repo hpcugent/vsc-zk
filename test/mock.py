@@ -32,13 +32,42 @@ class KazooClient(object):
 
     BASE_ZNODE = '/admin'
 
+
     def __init__(self, hosts, auth_data=None, default_acl=None):
-        pass
+        self.objs = {}
+        self.whoami = 'test'
 
     def start(self):
         pass
 
     def ensure_path(self, path):
+        pass
+
+    def set(self, obj, value):
+        self.objs[obj] = value;
+
+    def create(self, obj, value, **kw):
+        return self.set(obj, value)
+
+    def get(self, obj):
+        return (self.objs[obj], 'dummy')
+
+    def exists(self, obj):
+        return obj in self.objs
+
+    def Lock(self, path, id):
+        return Lock(self)
+        pass
+
+    def print_objs(self):
+        print  self.objs
+
+class Lock(object):
+    def __init__(self, dummy1):
+        pass
+    def __exit__(self, bl, er, erb):
+        pass
+    def __enter__(self):
         pass
 
 class Party(object):
@@ -52,6 +81,8 @@ class LockingQueue(object):
     def __init__(self, thingy, name, **kwargs):
         pass
     def put(self, something):
+        pass
+    def consume(self):
         pass
 
 class Counter(object):
