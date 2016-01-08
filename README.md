@@ -1,3 +1,11 @@
+
+
+
+# Description
+vsc-zk contains scripts to build zookeeper trees and tools using zookeeper.
+
+
+
 vsc-zk
 ======
 
