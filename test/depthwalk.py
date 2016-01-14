@@ -58,7 +58,7 @@ class DepthWalkTest(TestCase):
         """Test the depthwalk functionality"""
         pathlist = []
         for root, dirs, files in dw.depthwalk(self.basedir, 3):
-            root = re.sub('/tmp/[^/]+', '/tree', root)  # tmpdir to dummy
+            root = re.sub('(/var)?/tmp/[^/]+', '/tree', root)  # tmpdir to dummy
             pathlist.append(root)
             for dir in dirs:
                 pathlist.append(os.path.join(root, dir))
@@ -75,7 +75,7 @@ class DepthWalkTest(TestCase):
                '/tree/a1/ab2/foofile', '/tree/a1/aa2', '/tree/a1/aa2/.snapshots', '/tree/a1/aa2/foofile',
                '/tree/a1/.snapshots']
 
-        self.assertEqual(pathlist , res)
+        self.assertEqual(sorted(pathlist) , sorted(res))
 
     def test_get_pathlist(self):
         """ Tests the functionality of get_pathlist with an exclude rule """
@@ -83,8 +83,8 @@ class DepthWalkTest(TestCase):
         res = [('/tree', 0), ('/tree/c1', 0), ('/tree/b1', 0), ('/tree/a1', 0), ('/tree/b1/bb2', 0),
                ('/tree/b1/ba2', 0), ('/tree/a1/ac2', 0), ('/tree/a1/ab2', 0), ('/tree/a1/aa2', 0),
                ('/tree/a1/ab2/aa3', 1)]
-        genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec) for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, exclude_usr=None)]
-        self.assertEqual(genlist , res)
+        genlist = [(re.sub('(/var)?/tmp/[^/]+', '/tree', gen), rec) for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, exclude_usr=None)]
+        self.assertEqual(sorted(genlist) , sorted(res))
 
     def test_get_pathlist_with_subpaths(self):
         """ Tests the functionality of get_pathlist with an exclude rule and subpaths"""
@@ -100,17 +100,17 @@ class DepthWalkTest(TestCase):
         self.assertRaises(Exception, dw.get_pathlist, self.basedir, 2, exclude_re=regex, exclude_usr=None, rsubpaths=['3_a1/ab2/aa3'])
         self.assertRaises(Exception, dw.get_pathlist, self.basedir, 3, exclude_re=regex, exclude_usr=None, rsubpaths=['1_a1'])
 
-        genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec) for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1])]
+        genlist = [(re.sub('(/var)?/tmp/[^/]+', '/tree', gen), rec) for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1])]
         self.assertEqual(sorted(genlist), sorted(res))
 
-        genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec)
+        genlist = [(re.sub('(/var)?/tmp/[^/]+', '/tree', gen), rec)
                    for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1, subpath2])]
         res.remove(('/tree/a1/ab2/aa3/sub2/sub21/sub211', 1))
         res.extend([('/tree/a1/ab2/aa3/sub2/sub21/sub211', 0), ('/tree/a1/ab2/aa3/sub2/sub21/sub211/sub2112', 1)])
         self.assertEqual(sorted(genlist), sorted(res))
 
         subpath2 = '4_a1/ab2/aa3/sub2'
-        genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec)
+        genlist = [(re.sub('(/var)?/tmp/[^/]+', '/tree', gen), rec)
                    for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1, subpath2])]
         res.remove(('/tree/a1/ab2/aa3/sub2/sub21/sub211/sub2112', 1))
         res.append(('/tree/a1/ab2/aa3/sub2/sub21/sub211/sub2112', 0))
