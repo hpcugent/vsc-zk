@@ -75,7 +75,7 @@ class DepthWalkTest(TestCase):
                '/tree/a1/ab2/foofile', '/tree/a1/aa2', '/tree/a1/aa2/.snapshots', '/tree/a1/aa2/foofile',
                '/tree/a1/.snapshots']
 
-        self.assertListEqual(pathlist , res)
+        self.assertEqual(pathlist , res)
 
     def test_get_pathlist(self):
         """ Tests the functionality of get_pathlist with an exclude rule """
@@ -84,7 +84,7 @@ class DepthWalkTest(TestCase):
                ('/tree/b1/ba2', 0), ('/tree/a1/ac2', 0), ('/tree/a1/ab2', 0), ('/tree/a1/aa2', 0),
                ('/tree/a1/ab2/aa3', 1)]
         genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec) for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, exclude_usr=None)]
-        self.assertListEqual(genlist , res)
+        self.assertEqual(genlist , res)
 
     def test_get_pathlist_with_subpaths(self):
         """ Tests the functionality of get_pathlist with an exclude rule and subpaths"""
@@ -101,20 +101,20 @@ class DepthWalkTest(TestCase):
         self.assertRaises(Exception, dw.get_pathlist, self.basedir, 3, exclude_re=regex, exclude_usr=None, rsubpaths=['1_a1'])
 
         genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec) for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1])]
-        self.assertListEqual(sorted(genlist), sorted(res))
+        self.assertEqual(sorted(genlist), sorted(res))
 
         genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec)
                    for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1, subpath2])]
         res.remove(('/tree/a1/ab2/aa3/sub2/sub21/sub211', 1))
         res.extend([('/tree/a1/ab2/aa3/sub2/sub21/sub211', 0), ('/tree/a1/ab2/aa3/sub2/sub21/sub211/sub2112', 1)])
-        self.assertListEqual(sorted(genlist), sorted(res))
+        self.assertEqual(sorted(genlist), sorted(res))
 
         subpath2 = '4_a1/ab2/aa3/sub2'
         genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec)
                    for (gen, rec) in dw.get_pathlist(self.basedir, 3, exclude_re=regex, rsubpaths=[subpath1, subpath2])]
         res.remove(('/tree/a1/ab2/aa3/sub2/sub21/sub211/sub2112', 1))
         res.append(('/tree/a1/ab2/aa3/sub2/sub21/sub211/sub2112', 0))
-        self.assertListEqual(sorted(genlist), sorted(res))
+        self.assertEqual(sorted(genlist), sorted(res))
 
         subpath1 = '3_a1/ab2'
         subpath2 = '3_a1/ab2/aa3'
@@ -123,12 +123,12 @@ class DepthWalkTest(TestCase):
     def test_encode_paths(self):
         """ Test the encoding of a pathlist """
         arrin = [('/tree/c1', 0), ('/tree/b1/bb2/.snapshots', 1)]
-        self.assertListEqual(dw.encode_paths(arrin), ['0_/tree/c1', '1_/tree/b1/bb2/.snapshots'])
+        self.assertEqual(dw.encode_paths(arrin), ['0_/tree/c1', '1_/tree/b1/bb2/.snapshots'])
 
     def test_decode_path(self):
         """ Test the decoding of a path """
-        self.assertTupleEqual(dw.decode_path('0_/tree/c1'), ('/tree/c1', 0))
-        self.assertTupleEqual(dw.decode_path('1_/tree/b1/bb2/.snapshots'), ('/tree/b1/bb2/.snapshots', 1))
+        self.assertEqual(dw.decode_path('0_/tree/c1'), ('/tree/c1', 0))
+        self.assertEqual(dw.decode_path('1_/tree/b1/bb2/.snapshots'), ('/tree/b1/bb2/.snapshots', 1))
 
     def tearDown(self):
         shutil.rmtree(self.basedir)

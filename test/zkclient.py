@@ -71,15 +71,15 @@ class zkClientTest(TestCase):
         # Valid Rsyncdepth check failed test
         self.assertRaises(Exception, RsyncSource, 'dummy', netcat=True, rsyncpath='/netcattext')
         # The next 2 should be valid
-        self.assertIsInstance(RsyncSource('dummy', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2), RsyncSource)
-        self.assertIsInstance(RsyncSource('dummy', rsyncpath='/tmp', rsyncdepth=5), RsyncSource)
+        self.assertTrue(isinstance(RsyncSource('dummy', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2), RsyncSource))
+        self.assertTrue(isinstance(RsyncSource('dummy', rsyncpath='/tmp', rsyncdepth=5), RsyncSource))
         # Controller main class and module/session check
         zkclient = RsyncController('dummy', rsyncpath='/tmp')
-        self.assertIsInstance(zkclient, RsyncController)
+        self.assertTrue(isinstance(zkclient, RsyncController))
         self.assertEqual(zkclient.module, 'zkrs-default')
         self.assertEqual(zkclient.watchpath, '/admin/rsync/default/watch')
         zkclient = RsyncController('dummy', rsyncpath='/tmp', session='new')
-        self.assertIsInstance(zkclient, RsyncController)
+        self.assertTrue(isinstance(zkclient, RsyncController))
         self.assertEqual(zkclient.module, 'zkrs-new')
         self.assertEqual(zkclient.watchpath, '/admin/rsync/new/watch')
 
@@ -97,7 +97,7 @@ class zkClientTest(TestCase):
         zkclient = RsyncDestination('dummy', rsyncpath='/tmp', session='new')
         filen = zkclient.generate_daemon_config()
         filec = open(filen, "r").read()
-        self.assertMultiLineEqual(filec, res)
+        self.assertEqual(filec, res)
 
     def test_activate_and_pausing_dests(self):
         """ Test the pausing , disabling and activation of destinations """
