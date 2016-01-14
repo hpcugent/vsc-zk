@@ -52,7 +52,7 @@ class ConfigParserTest(TestCase):
 
     def test_rootinfo(self):
         """Checks if root info got parsed correctly"""
-        self.assertTupleEqual(cp.get_rootinfo(self.cfgremainder), ('admin', '/'))
+        self.assertEqual(cp.get_rootinfo(self.cfgremainder), ('admin', '/'))
 
     def test_parse_zkconfig(self):
         """ Checks if configuration file got parsed correctly"""
@@ -64,7 +64,7 @@ class ConfigParserTest(TestCase):
                 'user3': {'passwd': ['bla']}, 'user1': {'passwd': ['xyz']}, 'rsync': {'passwd': ['w00f']},
                 'sys': {'passwd': ['sis']}, 'kwaegema': {'passwd': ['w00f']}})
         cp.get_rootinfo(self.cfgremainder)
-        self.assertTupleEqual(cp.parse_zkconfig(self.cfgremainder), res)
+        self.assertEqual(cp.parse_zkconfig(self.cfgremainder), res)
 
 
     def tearDown(self):
