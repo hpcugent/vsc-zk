@@ -213,10 +213,12 @@ class RsyncSource(RsyncController):
     def get_state(self):
         """Get the state of a running session"""
         remain = self.len_paths()
-        code = self.ZKRS_NO_SUCH_SESSION_EXIT_CODE
         if remain > 0:
             code = 0
             self.log.info('Remaining: %s, Failed: %s' % (remain, len(self.failed_queue)))
+        else:
+            code = self.ZKRS_NO_SUCH_SESSION_EXIT_CODE
+            self.log.info('No active session')
         return code
 
     def write_donefile(self, values):
