@@ -38,6 +38,7 @@ import sys
 from kazoo.recipe.queue import LockingQueue
 from vsc.zk.base import VscKazooClient
 
+
 class RsyncController(VscKazooClient):
     """
     Class for controlling Rsync with Zookeeper. 

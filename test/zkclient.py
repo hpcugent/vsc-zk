@@ -30,16 +30,18 @@ Unit tests for VscKazooClient and childs
 """
 import sys
 import time
+import mock
 
 from kazoo.client import KazooClient
 from kazoo.recipe.party import Party
 from kazoo.recipe.queue import LockingQueue
 
-sys.modules['kazoo.client'] = __import__('mock')
-sys.modules['kazoo.recipe.queue'] = __import__('mock')
-sys.modules['kazoo.recipe.party'] = __import__('mock')
+sys.modules['kazoo.client'] = __import__('mocky')
+sys.modules['kazoo.recipe.queue'] = __import__('mocky')
+sys.modules['kazoo.recipe.party'] = __import__('mocky')
 
 from unittest import TestCase, TestLoader
+from vsc.utils.cache import FileCache
 from vsc.zk.base import VscKazooClient, RunWatchLoopLog
 from vsc.zk.rsync.controller import RsyncController
 from vsc.zk.rsync.destination import RsyncDestination
@@ -124,6 +126,31 @@ class zkClientTest(TestCase):
         self.assertFalse(zkclient.dest_is_sane('test'))
         val, dum = zkclient.get('/admin/rsync/new/dests/test')
         self.assertEqual(val, 'disabled')
+
+    def test_wirte_donefile(self):
+        """ Test the writing of the values to a cache file when done"""
+        donefile = "/tmp/done"
+        values = {
+            'completed' : 50,
+            'failed' : 5,
+            'unfinished' : 0
+        }
+        zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2, done_file=donefile)
+        zkclient.write_donefile(values)
+        cache_file = FileCache(donefile)
+        (timestamp, stats) = cache_file.load('stats')
+        self.assertEqual(values, stats)
+
+
+    @mock.patch('vsc.zk.rsync.source.RsyncSource.len_paths')
+    def test_get_state(self, mock_len):
+
+        zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
+        mock_len.return_value = 5
+        self.assertEqual(zkclient.get_state(), 0)
+        mock_len.return_value = 0
+        self.assertEqual(zkclient.get_state(), zkclient.ZKRS_NO_SUCH_SESSION_EXIT_CODE)
+
 
 def suite():
      """ returns all the testcases in this module """

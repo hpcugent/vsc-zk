@@ -43,6 +43,7 @@ from kazoo.recipe.watchers import DataWatch
 from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
 from vsc.utils.daemon import Daemon
+from vsc.utils.cache import FileCache
 from vsc.utils.generaloption import simple_option
 from vsc.zk.configparser import get_rootinfo, parse_zkconfig, parse_acls
 from vsc.zk.rsync.destination import RsyncDestination
@@ -101,10 +102,10 @@ def init_pidfile(pidfile, session, rstype):
 
 def get_state(servers, kwargs):
     """Get the state of a running session"""
-    rsyncP = RsyncSource(go.options.servers, **kwargs)
-    rsyncP.output_progress(rsyncP.len_paths(), rsyncP.paths_total)
+    rsyncP = RsyncSource(servers, rsyncdepth=0, **kwargs)
+    code = rsyncP.get_state()
     rsyncP.exit()
-    sys.exit(0)
+    sys.exit(code)
 
 def do_pathsonly(options, kwargs):
     """Only build the pathqueue and return timings"""
@@ -149,6 +150,7 @@ def start_source(options, kwargs):
     kwargs['rsubpaths'] = options.rsubpaths
     kwargs['arbitopts'] = options.arbitopts
     kwargs['checksum'] = options.checksum
+    kwargs['done_file'] = options.done_file
     kwargs['dryrun'] = options.dryrun
     kwargs['delete'] = options.delete
     kwargs['excludere'] = options.excludere
@@ -249,6 +251,7 @@ def main():
         'verifypath'  : ('Check basepath exists while running', None, 'store_false', True),
         'daemon'      : ('daemonize client', None, 'store_true', False),
         'domain'      : ('substitute domain', None, 'store', None),
+        'done-file'    : ('cachefile to write state to when done', None, 'store', None),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
         'pidfile'     : ('Pidfile template', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.pid'),
         'verbose'     : ('run rsync with --verbose', None, 'store_true', False),

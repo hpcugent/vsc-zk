@@ -84,6 +84,8 @@ class LockingQueue(object):
         pass
     def consume(self):
         pass
+    def __len__(self):
+        return 0
 
 class Counter(object):
     def __init__(self, client, path, default=0):

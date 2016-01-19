@@ -38,12 +38,14 @@ import re
 import tempfile
 import time
 
+from vsc.utils.cache import FileCache
 from kazoo.recipe.counter import Counter
 from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
 from vsc.utils.run import RunAsyncLoopLog
 from vsc.zk.depthwalk import get_pathlist, encode_paths, decode_path
 from vsc.zk.rsync.controller import RsyncController
+
 
 class RsyncSource(RsyncController):
     """
@@ -66,7 +68,7 @@ class RsyncSource(RsyncController):
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncdepth=-1, rsubpaths=[],
                  netcat=False, dryrun=False, delete=False, checksum=False, hardlinks=False, verbose=False,
-                 excludere=None, excl_usr=None, verifypath=True, arbitopts=[]):
+                 excludere=None, excl_usr=None, verifypath=True, done_file=None, arbitopts=[]):
 
         kwargs = {
             'hosts'       : hosts,
@@ -100,6 +102,7 @@ class RsyncSource(RsyncController):
         self.rsync_dry = dryrun
         self.rsync_hardlinks = hardlinks
         self.rsync_verbose = verbose
+        self.done_file = done_file
         self.excludere = excludere
         self.excl_usr = excl_usr
         self.rsubpaths = rsubpaths
@@ -207,9 +210,30 @@ class RsyncSource(RsyncController):
             time.sleep(self.WAITTIME)
         self.cleanup()
 
+    def get_state(self):
+        """Get the state of a running session"""
+        remain = self.len_paths()
+        code = self.ZKRS_NO_SUCH_SESSION_EXIT_CODE
+        if remain > 0:
+            code = 0
+            self.log.info('Remaining: %s, Failed: %s' % (remain, len(self.failed_queue)))
+        return code
+
+    def write_donefile(self, values):
+        """ Write a cachefile with some stats about the run when done """
+
+        cache_file = FileCache(self.done_file)
+        cache_file.update('stats', values, 0)
+        cache_file.close()
+
     def cleanup(self):
         """ Remove all session nodes in zookeeper after first logging the output queues """
 
+        values = {
+            'unfinished' : len(self.path_queue),
+            'failed' : len(self.path_queue),
+            'completed' : len(self.completed_queue)
+        }
         while (len(self.path_queue) > 0):
             self.log.warning('Unfinished Path %s' % self.path_queue.get())
             self.path_queue.consume()
@@ -238,6 +262,10 @@ class RsyncSource(RsyncController):
         self.remove_ready_watch()
         self.release_lock()
         self.log.info('Cleanup done: Lock, Queues and watch removed')
+
+        if self.done_file:
+            self.write_donefile(values)
+
 
     def generate_file(self, path):
         """

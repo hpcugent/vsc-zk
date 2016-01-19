@@ -47,7 +47,7 @@ shared_setup.SHARED_TARGET.update({
 
 PACKAGE = {
     'name': 'vsc-zk',
-    'version': '0.8.2',
+    'version': '0.9.1',
     'author': [sdw],
     'maintainer': [sdw, kw],
     'packages': ['vsc', 'vsc.zk', 'vsc.zk.rsync'],
@@ -59,6 +59,7 @@ PACKAGE = {
     'install_requires': [
         'vsc-base >= 1.6.7',
         'kazoo >= 1.3',
+        'vsc-utils >= 1.7.7',
     ],
 }
 
