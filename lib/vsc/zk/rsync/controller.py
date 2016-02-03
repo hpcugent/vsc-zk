@@ -67,15 +67,15 @@ class RsyncController(VscKazooClient):
 
         super(RsyncController, self).__init__(**kwargs)
 
+        self.rsyncpath = rsyncpath.rstrip(os.path.sep)
+
         if not netcat:
-            rsyncpath = rsyncpath.rstrip(os.path.sep)
-            if not os.path.isdir(rsyncpath):
+            if verifypath and not self.basepath_ok():
                 self.log.raiseException('Path does not exists in filesystem: %s' % rsyncpath)
             if not os.path.isdir(self.RSDIR):
                 os.mkdir(self.RSDIR, 0700)
             self.module = 'zkrs-%s' % self.session
 
-        self.rsyncpath = rsyncpath
         self.dest_queue = LockingQueue(self, self.znode_path(self.session + '/destQueue'))
         self.verifypath = verifypath
 

@@ -102,6 +102,7 @@ def init_pidfile(pidfile, session, rstype):
 
 def get_state(servers, kwargs):
     """Get the state of a running session"""
+    kwargs['verifypath'] = False # Not needed for state info
     rsyncP = RsyncSource(servers, rsyncdepth=0, **kwargs)
     code = rsyncP.get_state()
     rsyncP.exit()
