@@ -42,7 +42,7 @@ sys.modules['kazoo.recipe.party'] = __import__('mocky')
 
 from unittest import TestCase, TestLoader
 from vsc.utils.cache import FileCache
-from vsc.zk.base import VscKazooClient, RunWatchLoopLog
+from vsc.zk.base import VscKazooClient, RunWatchLoopLog, ZKRS_NO_SUCH_SESSION_EXIT_CODE
 from vsc.zk.rsync.controller import RsyncController
 from vsc.zk.rsync.destination import RsyncDestination
 from vsc.zk.rsync.source import RsyncSource
@@ -149,7 +149,7 @@ class zkClientTest(TestCase):
         mock_len.return_value = 5
         self.assertEqual(zkclient.get_state(), 0)
         mock_len.return_value = 0
-        self.assertEqual(zkclient.get_state(), zkclient.ZKRS_NO_SUCH_SESSION_EXIT_CODE)
+        self.assertEqual(zkclient.get_state(), ZKRS_NO_SUCH_SESSION_EXIT_CODE)
 
 
 def suite():

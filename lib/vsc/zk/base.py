@@ -42,6 +42,7 @@ from vsc.utils import fancylogger
 from vsc.utils.run import RunAsyncLoopLog, RunLoopException
 
 RUNRUN_WATCH_EXITCODE = 101
+ZKRS_NO_SUCH_SESSION_EXIT_CODE = 14
 
 class RunWatchLoopLog(RunAsyncLoopLog):
     """When zookeeperclient is ready, stop"""
@@ -70,7 +71,6 @@ class VscKazooClient(KazooClient):
 
     BASE_ZNODE = '/admin'
     BASE_PARTIES = None
-    ZKRS_NO_SUCH_SESSION_EXIT_CODE = 14
 
     def __init__(self, hosts, session=None, name=None, default_acl=None, auth_data=None):
         self.log = fancylogger.getLogger(self.__class__.__name__, fname=False)

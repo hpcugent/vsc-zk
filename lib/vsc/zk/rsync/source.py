@@ -43,9 +43,9 @@ from kazoo.recipe.counter import Counter
 from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
 from vsc.utils.run import RunAsyncLoopLog
+from vsc.zk.base import ZKRS_NO_SUCH_SESSION_EXIT_CODE
 from vsc.zk.depthwalk import get_pathlist, encode_paths, decode_path
 from vsc.zk.rsync.controller import RsyncController
-
 
 class RsyncSource(RsyncController):
     """
@@ -217,7 +217,7 @@ class RsyncSource(RsyncController):
             code = 0
             self.log.info('Remaining: %s, Failed: %s' % (remain, len(self.failed_queue)))
         else:
-            code = self.ZKRS_NO_SUCH_SESSION_EXIT_CODE
+            code = ZKRS_NO_SUCH_SESSION_EXIT_CODE
             self.log.info('No active session')
         return code
 
