@@ -32,7 +32,6 @@ import sys
 import time
 
 from kazoo.client import KazooClient
-from kazoo.recipe.counter import Counter
 from kazoo.recipe.party import Party
 from kazoo.recipe.queue import LockingQueue
 
@@ -41,9 +40,10 @@ sys.modules['kazoo.recipe.queue'] = __import__('mocky')
 sys.modules['kazoo.recipe.party'] = __import__('mocky')
 sys.modules['kazoo.recipe.counter'] = __import__('mocky')
 
+from kazoo.recipe.counter import Counter
+from vsc.zk.rsync.source import RsyncSource
 
 from unittest import TestCase, TestLoader
-from vsc.zk.rsync.source import RsyncSource
 
 rsync_output = """
 2014-06-02 17:25:20,684 INFO       zkrsync.RsyncSource MainThread
@@ -99,7 +99,7 @@ if __name__ == '__main__':
 #     print zkclient.counters
 #
 #
-#     zkclient.parse_output(output)
+#     zkclient.parse_output(rsync_output)
 #     print zkclient.output_stats()
 #
 #     zkclient.parse_output(output)
