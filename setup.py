@@ -61,6 +61,9 @@ PACKAGE = {
         'kazoo >= 1.3',
         'vsc-utils >= 1.7.7',
     ],
+    'tests_require': [
+        'mock >= 1.3.0',
+    ],
 }
 
 
