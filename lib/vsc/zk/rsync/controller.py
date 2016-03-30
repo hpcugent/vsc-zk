@@ -54,7 +54,7 @@ class RsyncController(VscKazooClient):
     STATUS = 'status'
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, netcat=None, verifypath=True):
+                 auth_data=None, rsyncpath=None, netcat=None, verifypath=True, dropcache=False):
 
         kwargs = {
             'hosts'       : hosts,
@@ -78,6 +78,7 @@ class RsyncController(VscKazooClient):
 
         self.dest_queue = LockingQueue(self, self.znode_path(self.session + '/destQueue'))
         self.verifypath = verifypath
+        self.rsync_dropcache = dropcache
 
     def get_all_hosts(self):
         """Return all zookeeper clients in this rsync session party"""

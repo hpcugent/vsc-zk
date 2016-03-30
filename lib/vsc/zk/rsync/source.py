@@ -67,7 +67,8 @@ class RsyncSource(RsyncController):
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncdepth=-1, rsubpaths=[],
-                 netcat=False, dryrun=False, delete=False, checksum=False, hardlinks=False, verbose=False,
+                 netcat=False, dryrun=False, delete=False, checksum=False, 
+                 hardlinks=False, verbose=False, dropcache=False,
                  excludere=None, excl_usr=None, verifypath=True, done_file=None, arbitopts=[]):
 
         kwargs = {
@@ -78,7 +79,8 @@ class RsyncSource(RsyncController):
             'auth_data'   : auth_data,
             'rsyncpath'   : rsyncpath,
             'verifypath'  : verifypath,
-            'netcat'      : netcat
+            'netcat'      : netcat,
+            'dropcache'   : dropcache,
         }
         super(RsyncSource, self).__init__(**kwargs)
 
@@ -350,6 +352,8 @@ class RsyncSource(RsyncController):
             flags.append('--delete')
         if self.rsync_checksum:
             flags.append('--checksum')
+        if self.rsync_dropcache:
+            flags.append('--drop-cache')
         if self.rsync_hardlinks:
             flags.append('--hard-links')
         if self.rsync_verbose:

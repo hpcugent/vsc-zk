@@ -252,7 +252,8 @@ def main():
         'verifypath'  : ('Check basepath exists while running', None, 'store_false', True),
         'daemon'      : ('daemonize client', None, 'store_true', False),
         'domain'      : ('substitute domain', None, 'store', None),
-        'done-file'    : ('cachefile to write state to when done', None, 'store', None),
+        'done-file'   : ('cachefile to write state to when done', None, 'store', None),
+        'dropcache'   : ('run rsync with --drop-cache', None, 'store_true', False),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
         'pidfile'     : ('Pidfile template', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.pid'),
         'verbose'     : ('run rsync with --verbose', None, 'store_true', False),
@@ -278,6 +279,7 @@ def main():
         'rsyncpath'   : go.options.rsyncpath,
         'netcat'      : go.options.netcat,
         'verifypath'  : go.options.verifypath,
+        'dropcache'   : go.options.dropcache,
         }
 
     if go.options.daemon:

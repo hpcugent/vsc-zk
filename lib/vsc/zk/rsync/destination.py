@@ -87,7 +87,7 @@ class RsyncDestination(RsyncController):
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncport=None, startport=4444,
-                 netcat=False, domain=None, verifypath=True):
+                 netcat=False, domain=None, verifypath=True, dropcache=False):
 
         kwargs = {
             'hosts'       : hosts,
@@ -98,6 +98,7 @@ class RsyncDestination(RsyncController):
             'rsyncpath'   : rsyncpath,
             'verifypath'  : verifypath,
             'netcat'      : netcat,
+            'dropcache'   : dropcache,
         }
 
         host = socket.getfqdn()
@@ -202,6 +203,8 @@ class RsyncDestination(RsyncController):
         config = self.generate_daemon_config()
 
         cmd = ['rsync', '--daemon', '--no-detach', '--config' , config, '--port', str(self.port)]
+        if self.rsync_dropcache:
+            cmd.append('--drop-cache')
         code, output = self.run_with_watch_and_queue(' '.join(cmd))
 
         os.remove(config)
