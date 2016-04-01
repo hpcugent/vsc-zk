@@ -329,7 +329,7 @@ class RsyncSource(RsyncController):
         lines = output.splitlines()
         for line in lines:
             keyval = line.split(':')
-            if len(keyval) < 2:
+            if len(keyval) < 2 or keyval[1] == ' ':
                 self.log.debug('output line not parsed: %s' % line)
                 continue
             key = re.sub(' ', '_', keyval[0])
