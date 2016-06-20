@@ -157,6 +157,7 @@ def start_source(options, kwargs):
     kwargs['excludere'] = options.excludere
     kwargs['excl_usr'] = options.excl_usr
     kwargs['hardlinks'] = options.hardlinks
+    kwargs['timeout'] = options.timeout
     kwargs['verbose'] = options.verbose
     # Start zookeeper connections
     rsyncS = RsyncSource(options.servers, **kwargs)
@@ -256,6 +257,7 @@ def main():
         'dropcache'   : ('run rsync with --drop-cache', None, 'store_true', False),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
         'pidfile'     : ('Pidfile template', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.pid'),
+        'timeout'     : ('run rsync with --timeout TIMEOUT',  "int", 'store', 0),
         'verbose'     : ('run rsync with --verbose', None, 'store_true', False),
         # Individual Destination client specific options
         'rsyncport'   : ('force port on which rsyncd binds', "int", 'store', None),
