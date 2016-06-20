@@ -31,16 +31,18 @@ Unit tests for Vsc-zk Counters
 import sys
 import time
 
-from kazoo.client import KazooClient
-from kazoo.recipe.party import Party
-from kazoo.recipe.queue import LockingQueue
 
 sys.modules['kazoo.client'] = __import__('mocky')
 sys.modules['kazoo.recipe.queue'] = __import__('mocky')
 sys.modules['kazoo.recipe.party'] = __import__('mocky')
 sys.modules['kazoo.recipe.counter'] = __import__('mocky')
 
+from kazoo.client import KazooClient
+from kazoo.recipe.party import Party
+from kazoo.recipe.queue import LockingQueue
+import inspect
 from kazoo.recipe.counter import Counter
+print  inspect.getmodule(Counter)
 from vsc.zk.rsync.source import RsyncSource
 
 from unittest import TestCase, TestLoader
