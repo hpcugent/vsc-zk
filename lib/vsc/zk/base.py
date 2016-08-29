@@ -227,6 +227,7 @@ class VscKazooClient(KazooClient):
         """Register to watch and set to ready when watch is set to 'stop' """
         watchpath = '%s/%s' % (self.watchpath, 'ready')
         @self.DataWatch(watchpath)
+        # pylint: disable=unused-variable,unused-argument
         def ready_watcher(data, stat):
             self.log.debug("Watch status is %s" % data)
             if data == 'stop':

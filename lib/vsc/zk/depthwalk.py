@@ -31,7 +31,6 @@ vsc-zk depthwalk
 """
 
 import os
-import re
 
 from pwd import getpwnam
 from vsc.utils import fancylogger
@@ -80,7 +79,7 @@ def build_paths(path, depth, exclude_re=None, exclude_usr=None):
         return [(path, 1)]
     pathlist = [(path, 0)]
     pathdepth = path.count(os.path.sep)
-    for root, dirs, files in depthwalk(path, depth):
+    for root, dirs, _ in depthwalk(path, depth):
         if exclude_path(root, exclude_re, ex_uid):
             logger.info('excluding path %s' % root)
             del dirs[:]
@@ -106,7 +105,7 @@ def build_paths(path, depth, exclude_re=None, exclude_usr=None):
 
     return pathlist
 
-def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=[]):
+def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=None):
     """
     Returns a list of (path, recursive) tuples under path with the maximum depth specified.
     Depth 0 is the basepath itself. 

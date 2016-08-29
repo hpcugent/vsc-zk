@@ -37,15 +37,10 @@ import stat
 import sys
 import time
 
-from kazoo.recipe.lock import Lock
-from kazoo.recipe.queue import LockingQueue
-from kazoo.recipe.watchers import DataWatch
 from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
 from vsc.utils.daemon import Daemon
-from vsc.utils.cache import FileCache
 from vsc.utils.generaloption import simple_option
-from vsc.zk.configparser import get_rootinfo, parse_zkconfig, parse_acls
 from vsc.zk.rsync.destination import RsyncDestination
 from vsc.zk.rsync.source import RsyncSource
 
@@ -169,7 +164,7 @@ def start_source(options, kwargs):
         watchnode = rsyncS.start_ready_rwatch()
         if not watchnode:
             sys.exit(1)
-        paths_total = rsyncS.build_pathqueue()
+        rsyncS.build_pathqueue()
         rsyncS.wait_and_keep_progress()
         rsyncS.shutdown_all()
 

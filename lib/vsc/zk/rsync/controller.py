@@ -32,7 +32,6 @@ zk.rsync controller
 """
 
 import os
-import sys
 
 from kazoo.recipe.queue import LockingQueue
 from vsc.zk.base import VscKazooClient
@@ -98,7 +97,7 @@ class RsyncController(VscKazooClient):
         with lock:
             if not self.exists_znode(destpath):
                 self.make_znode(destpath, ephemeral=True)
-            current_state, stat = self.get_znode(destpath)
+            current_state, _ = self.get_znode(destpath)
             self.log.debug('Current state is %s, requested state is %s' % (current_state, state))
             if state == self.STATE_PAUSED:
                 self.set_paused(destpath, current_state)

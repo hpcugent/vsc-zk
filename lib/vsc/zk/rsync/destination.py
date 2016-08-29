@@ -36,7 +36,6 @@ import os
 import socket
 import tempfile
 
-from kazoo.recipe.queue import LockingQueue
 from vsc.zk.base import RunWatchLoopLog
 from vsc.zk.rsync.controller import RsyncController
 
@@ -130,14 +129,14 @@ class RsyncDestination(RsyncController):
     def generate_daemon_config(self):
         """ Write config file for this session """
         fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
-        file = os.fdopen(fd, "w")
+        wfile = os.fdopen(fd, "w")
         config = ConfigParser.RawConfigParser()
         config.add_section(self.module)
         config.set(self.module, 'path', self.rsyncpath)
         config.set(self.module, 'read only', 'no')
         config.set(self.module, 'uid', 'root')
         config.set(self.module, 'gid', 'root')
-        config.write(file)
+        config.write(wfile)
         return name
 
     def reserve_port(self):
@@ -155,7 +154,6 @@ class RsyncDestination(RsyncController):
             else:
                 port = self.start_port
                 portpath = '%s/%s' % (portdir, port)
-                pfree = False
                 while (self.exists_znode(portpath)):
                     port += 1
                     portpath = '%s/%s' % (portdir, port)

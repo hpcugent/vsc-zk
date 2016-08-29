@@ -39,7 +39,6 @@ import time
 
 from vsc.utils.cache import FileCache
 from kazoo.recipe.counter import Counter
-from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
 from vsc.utils.run import RunAsyncLoopLog
 from vsc.zk.base import ZKRS_NO_SUCH_SESSION_EXIT_CODE
@@ -65,10 +64,10 @@ class RsyncSource(RsyncController):
 
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, rsyncdepth=-1, rsubpaths=[],
+                 auth_data=None, rsyncpath=None, rsyncdepth=-1, rsubpaths=None,
                  netcat=False, dryrun=False, delete=False, checksum=False, 
                  hardlinks=False, verbose=False, dropcache=False, timeout=None,
-                 excludere=None, excl_usr=None, verifypath=True, done_file=None, arbitopts=[]):
+                 excludere=None, excl_usr=None, verifypath=True, done_file=None, arbitopts=None):
 
         kwargs = {
             'hosts'       : hosts,
@@ -283,8 +282,8 @@ class RsyncSource(RsyncController):
             subpath = subpath.strip(os.path.sep)
 
             fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
-            file = os.fdopen(fd, "w")
-            file.write('%s/' % subpath)
+            wfile = os.fdopen(fd, "w")
+            wfile.write('%s/' % subpath)
             return name
 
     def attempt_run(self, path, attempts=3):
@@ -299,7 +298,7 @@ class RsyncSource(RsyncController):
                 self.path_queue.consume()  # But stop locking it
                 time.sleep(self.TIME_OUT)  # Wait before new attempt
                 return 1, None
-            port, host, other = tuple(dest.split(':', 2))
+            port, host, _ = tuple(dest.split(':', 2))
 
             if self.netcat:
                 code, output = self.run_netcat(path, host, port)
@@ -340,12 +339,12 @@ class RsyncSource(RsyncController):
                 continue
             self.counters[key] += int(val)
 
-    def get_flags(self, file, recursive):
+    def get_flags(self, files, recursive):
         """
         Make an array of flags to be used
         """
         # Start rsync recursive or non recursive; archive mode (a) is equivalent to  -rlptgoD (see man rsync)
-        flags = ['--stats', '--numeric-ids', '-lptgoD', '--files-from=%s' % file]
+        flags = ['--stats', '--numeric-ids', '-lptgoD', '--files-from=%s' % files]
         if recursive:
             flags.append('-r')
         if self.rsync_delete:
@@ -378,15 +377,15 @@ class RsyncSource(RsyncController):
         It uses the destination module linked with this session.
         """
         path, recursive = decode_path(encpath)
-        file = self.generate_file(path)
-        flags = self.get_flags(file, recursive)
+        gfile = self.generate_file(path)
+        flags = self.get_flags(gfile, recursive)
 
         self.log.info('%s is sending path %s to %s %s' % (self.whoami, path, host, port))
         self.log.debug('Used flags: "%s"' % ' '.join(flags))
         command = 'rsync %s %s/ rsync://%s:%s/%s' % (' '.join(flags), self.rsyncpath,
                                                      host, port, self.module)
         code, output = RunAsyncLoopLog.run(command)
-        os.remove(file)
+        os.remove(gfile)
         parsed = self.parse_output(output)
         return code, parsed
 
@@ -464,7 +463,7 @@ class RsyncSource(RsyncController):
                 return None
             else:
                 portmap = '%s/portmap/%s' % (self.session, whoami)
-                lport, stat = self.get_znode(portmap)
+                lport, _ = self.get_znode(portmap)
                 if port != lport:
                     self.log.error('destination port not valid')  # Should not happen
                     self.dest_queue.consume()

@@ -46,7 +46,7 @@ def main():
     }
     go = simple_option(options)
 
-    rpasswd, rpath = get_rootinfo(go.configfile_remainder)
+    rpasswd, _ = get_rootinfo(go.configfile_remainder)
     znodes, users = parse_zkconfig(go.configfile_remainder)
 
     logger.debug("znodes: %s" % znodes)
