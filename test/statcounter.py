@@ -46,6 +46,8 @@ from vsc.zk.rsync.source import RsyncSource
 
 from unittest import TestCase, TestLoader
 print  inspect.getmodule(Counter)
+import pprint
+pprint.pprint(sys.modules)
 
 rsync_output = """
 2014-06-02 17:25:20,684 INFO       zkrsync.RsyncSource MainThread
