@@ -42,10 +42,10 @@ from kazoo.recipe.party import Party
 from kazoo.recipe.queue import LockingQueue
 import inspect
 from kazoo.recipe.counter import Counter
-print  inspect.getmodule(Counter)
 from vsc.zk.rsync.source import RsyncSource
 
 from unittest import TestCase, TestLoader
+print  inspect.getmodule(Counter)
 
 rsync_output = """
 2014-06-02 17:25:20,684 INFO       zkrsync.RsyncSource MainThread
