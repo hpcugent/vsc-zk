@@ -31,7 +31,7 @@ Unit tests for Vsc-zk Counters
 import sys
 import time
 
-
+# same as in zkclient
 sys.modules['kazoo.client'] = __import__('mocky')
 sys.modules['kazoo.recipe.queue'] = __import__('mocky')
 sys.modules['kazoo.recipe.party'] = __import__('mocky')
@@ -40,14 +40,9 @@ sys.modules['kazoo.recipe.counter'] = __import__('mocky')
 from kazoo.client import KazooClient
 from kazoo.recipe.party import Party
 from kazoo.recipe.queue import LockingQueue
-import inspect
-from kazoo.recipe.counter import Counter
 from vsc.zk.rsync.source import RsyncSource
 
-from unittest import TestCase, TestLoader
-print  inspect.getmodule(Counter)
-import pprint
-pprint.pprint(sys.modules)
+from vsc.install.testing import TestCase
 
 rsync_output = """
 2014-06-02 17:25:20,684 INFO       zkrsync.RsyncSource MainThread
@@ -74,38 +69,14 @@ total size is 39488  speedup is 0.96
 
 json_output = '{"Total_transferred_file_size": 39488, "Total_file_size": 39488, "File_list_size": 371, "Total_bytes_sent": 40610, "Total_bytes_received": 342, "Number_of_files": 55, "Number_of_files_transferred": 17, "Literal_data": 39488, "Matched_data": 0}'
 json_output2 = '{"Total_transferred_file_size": 78976, "Total_file_size": 78976, "File_list_size": 742, "Total_bytes_sent": 81220, "Total_bytes_received": 684, "Number_of_files": 110, "Number_of_files_transferred": 34, "Literal_data": 78976, "Matched_data": 0}'
-class zkStatCounterTest(TestCase):
 
-    def setUp(self):
-        pass
+class zkStatCounterTest(TestCase):
 
     def test_generate_stats(self):
         """ Test the correct working of stats gathering and outputting """
         zkclient = RsyncSource('dummy', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2, verbose=True)
+
         zkclient.parse_output(rsync_output)
         self.assertEqual(zkclient.output_stats(), json_output)
         zkclient.parse_output(rsync_output)
         self.assertEqual(zkclient.output_stats(), json_output2)
-
-def suite():
-     """ returns all the testcases in this module """
-     return TestLoader().loadTestsFromTestCase(zkStatCounterTest)
-
-if __name__ == '__main__':
-    """Use this __main__ block to help write and test unittests
-        just uncomment the parts you need
-    """
-
-
-#     zkclient = RsyncSource('dummy', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2, verbose=True)
-#
-#     print zkclient.output_stats()
-#     print zkclient.counters
-#
-#
-#     zkclient.parse_output(rsync_output)
-#     print zkclient.output_stats()
-#
-#     zkclient.parse_output(output)
-#     print zkclient.output_stats()
-

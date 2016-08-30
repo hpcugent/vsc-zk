@@ -35,13 +35,15 @@ import tempfile
 
 import vsc.zk.depthwalk as dw
 
-from unittest import TestCase, TestLoader
+from vsc.install.testing import TestCase
 
 class DepthWalkTest(TestCase):
     """Tests for depthwalk"""
 
     def setUp(self):
         """ Create a test direcory structure """
+        super(DepthWalkTest, self).setUp()
+
         self.basedir = tempfile.mkdtemp()
         dirs = ['a1', 'b1', 'c1', 'a1/aa2', 'a1/ab2', 'a1/ac2', 'b1/ba2', 'b1/bb2', 'a1/ab2/aa3']
         extradirs = ['a1/ab2/aa3/sub1', 'a1/ab2/aa3/sub2', 'a1/ab2/aa3/sub2/sub21',
@@ -53,6 +55,10 @@ class DepthWalkTest(TestCase):
             os.mkdir(path)
             os.mkdir('%s/.snapshots' % path)
             open('%s/foofile' % path, 'w').close()
+
+    def tearDown(self):
+        shutil.rmtree(self.basedir)
+        super(DepthWalkTest, self).tearDown()
 
     def test_depthwalk(self):
         """Test the depthwalk functionality"""
@@ -129,41 +135,3 @@ class DepthWalkTest(TestCase):
         """ Test the decoding of a path """
         self.assertEqual(dw.decode_path('0_/tree/c1'), ('/tree/c1', 0))
         self.assertEqual(dw.decode_path('1_/tree/b1/bb2/.snapshots'), ('/tree/b1/bb2/.snapshots', 1))
-
-    def tearDown(self):
-        shutil.rmtree(self.basedir)
-
-def suite():
-    """ returns all the testcases in this module """
-    return TestLoader().loadTestsFromTestCase(DepthWalkTest)
-
-if __name__ == '__main__':
-    """Use this __main__ block to help write and test unittests
-        just uncomment the parts you need
-    """
-#     basedir = tempfile.mkdtemp()
-#     dirs = ['a1', 'b1', 'c1', 'a1/aa2', 'a1/ab2', 'a1/ac2', 'b1/ba2', 'b1/bb2', 'a1/ab2/aa3']
-#     for dir in dirs:
-#             path = '%s/%s' % (basedir, dir)
-#             os.mkdir(path)
-#             os.mkdir('%s/.snapshots' % path)
-#             open('%s/foofile' % path, 'w').close()
-#
-#     pathlist = []
-#     for root, dirs, files in dw.depthwalk(basedir, 3):
-#         root = re.sub('/tmp/[^/]+', '/tree', root)
-#         pathlist.append(root)
-#         for dir in dirs:
-#             pathlist.append(os.path.join(root, dir))
-#         for file in files:
-#             pathlist.append(os.path.join(root, file))
-#     print pathlist
-#     regex = re.compile('/\.snapshots(/.*|$)')
-#     genlist = [(re.sub('/tmp/[^/]+', '/tree', gen), rec) for (gen, rec) in dw.get_pathlist(basedir, 3, exclude_re=regex, exclude_usr=None)]
-#     print genlist
-#     lala = [('/tree/c1', 0), ('/tree/b1/bb2/.snapshots', 1)]
-#     print dw.encode_paths(lala)
-#     print dw.decode_path('0_/tree/c1')
-#     print dw.decode_path('1_/tree/b1/bb2/.snapshots')
-#
-#     shutil.rmtree(basedir)
