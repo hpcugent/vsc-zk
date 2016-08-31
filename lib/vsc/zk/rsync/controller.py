@@ -71,7 +71,7 @@ class RsyncController(VscKazooClient):
             if verifypath and not self.basepath_ok():
                 self.log.raiseException('Path does not exists in filesystem: %s' % rsyncpath)
             if not os.path.isdir(self.RSDIR):
-                os.mkdir(self.RSDIR, 0700)
+                os.mkdir(self.RSDIR, 0o700)
             self.module = 'zkrs-%s' % self.session
 
         self.dest_queue = LockingQueue(self, self.znode_path(self.session + '/destQueue'))
