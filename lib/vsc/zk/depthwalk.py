@@ -1,16 +1,15 @@
-#!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2013 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-zk
+# https://github.com/hpcugent/vsc-zk
 #
 # vsc-zk is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Library General Public License as
@@ -32,7 +31,6 @@ vsc-zk depthwalk
 """
 
 import os
-import re
 
 from pwd import getpwnam
 from vsc.utils import fancylogger
@@ -81,7 +79,7 @@ def build_paths(path, depth, exclude_re=None, exclude_usr=None):
         return [(path, 1)]
     pathlist = [(path, 0)]
     pathdepth = path.count(os.path.sep)
-    for root, dirs, files in depthwalk(path, depth):
+    for root, dirs, _ in depthwalk(path, depth):
         if exclude_path(root, exclude_re, ex_uid):
             logger.info('excluding path %s' % root)
             del dirs[:]
@@ -107,7 +105,7 @@ def build_paths(path, depth, exclude_re=None, exclude_usr=None):
 
     return pathlist
 
-def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=[]):
+def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=None):
     """
     Returns a list of (path, recursive) tuples under path with the maximum depth specified.
     Depth 0 is the basepath itself. 

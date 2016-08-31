@@ -1,16 +1,15 @@
-#!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2013 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-zk
+# https://github.com/hpcugent/vsc-zk
 #
 # vsc-zk is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Library General Public License as
@@ -37,7 +36,6 @@ import os
 import socket
 import tempfile
 
-from kazoo.recipe.queue import LockingQueue
 from vsc.zk.base import RunWatchLoopLog
 from vsc.zk.rsync.controller import RsyncController
 
@@ -87,7 +85,7 @@ class RsyncDestination(RsyncController):
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncport=None, startport=4444,
-                 netcat=False, domain=None, verifypath=True):
+                 netcat=False, domain=None, verifypath=True, dropcache=False):
 
         kwargs = {
             'hosts'       : hosts,
@@ -98,6 +96,7 @@ class RsyncDestination(RsyncController):
             'rsyncpath'   : rsyncpath,
             'verifypath'  : verifypath,
             'netcat'      : netcat,
+            'dropcache'   : dropcache,
         }
 
         host = socket.getfqdn()
@@ -130,14 +129,14 @@ class RsyncDestination(RsyncController):
     def generate_daemon_config(self):
         """ Write config file for this session """
         fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
-        file = os.fdopen(fd, "w")
+        wfile = os.fdopen(fd, "w")
         config = ConfigParser.RawConfigParser()
         config.add_section(self.module)
         config.set(self.module, 'path', self.rsyncpath)
         config.set(self.module, 'read only', 'no')
         config.set(self.module, 'uid', 'root')
         config.set(self.module, 'gid', 'root')
-        config.write(file)
+        config.write(wfile)
         return name
 
     def reserve_port(self):
@@ -155,7 +154,6 @@ class RsyncDestination(RsyncController):
             else:
                 port = self.start_port
                 portpath = '%s/%s' % (portdir, port)
-                pfree = False
                 while (self.exists_znode(portpath)):
                     port += 1
                     portpath = '%s/%s' % (portdir, port)
@@ -202,6 +200,8 @@ class RsyncDestination(RsyncController):
         config = self.generate_daemon_config()
 
         cmd = ['rsync', '--daemon', '--no-detach', '--config' , config, '--port', str(self.port)]
+        if self.rsync_dropcache:
+            cmd.append('--drop-cache')
         code, output = self.run_with_watch_and_queue(' '.join(cmd))
 
         os.remove(config)

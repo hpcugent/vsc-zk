@@ -1,16 +1,15 @@
-#!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2013 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-zk
+# https://github.com/hpcugent/vsc-zk
 #
 # vsc-zk is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Library General Public License as
@@ -33,10 +32,10 @@ zk.rsync controller
 """
 
 import os
-import sys
 
 from kazoo.recipe.queue import LockingQueue
 from vsc.zk.base import VscKazooClient
+
 
 class RsyncController(VscKazooClient):
     """
@@ -53,7 +52,7 @@ class RsyncController(VscKazooClient):
     STATUS = 'status'
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, netcat=None, verifypath=True):
+                 auth_data=None, rsyncpath=None, netcat=None, verifypath=True, dropcache=False):
 
         kwargs = {
             'hosts'       : hosts,
@@ -66,17 +65,18 @@ class RsyncController(VscKazooClient):
 
         super(RsyncController, self).__init__(**kwargs)
 
+        self.rsyncpath = rsyncpath.rstrip(os.path.sep)
+
         if not netcat:
-            rsyncpath = rsyncpath.rstrip(os.path.sep)
-            if not os.path.isdir(rsyncpath):
+            if verifypath and not self.basepath_ok():
                 self.log.raiseException('Path does not exists in filesystem: %s' % rsyncpath)
             if not os.path.isdir(self.RSDIR):
-                os.mkdir(self.RSDIR, 0700)
+                os.mkdir(self.RSDIR, 0o700)
             self.module = 'zkrs-%s' % self.session
 
-        self.rsyncpath = rsyncpath
         self.dest_queue = LockingQueue(self, self.znode_path(self.session + '/destQueue'))
         self.verifypath = verifypath
+        self.rsync_dropcache = dropcache
 
     def get_all_hosts(self):
         """Return all zookeeper clients in this rsync session party"""
@@ -97,7 +97,7 @@ class RsyncController(VscKazooClient):
         with lock:
             if not self.exists_znode(destpath):
                 self.make_znode(destpath, ephemeral=True)
-            current_state, stat = self.get_znode(destpath)
+            current_state, _ = self.get_znode(destpath)
             self.log.debug('Current state is %s, requested state is %s' % (current_state, state))
             if state == self.STATE_PAUSED:
                 self.set_paused(destpath, current_state)

@@ -1,16 +1,15 @@
-#!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2013 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-zk
+# https://github.com/hpcugent/vsc-zk
 #
 # vsc-zk is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Library General Public License as
@@ -38,10 +37,11 @@ import re
 import tempfile
 import time
 
+from vsc.utils.cache import FileCache
 from kazoo.recipe.counter import Counter
-from kazoo.recipe.lock import Lock
 from kazoo.recipe.queue import LockingQueue
 from vsc.utils.run import RunAsyncLoopLog
+from vsc.zk.base import ZKRS_NO_SUCH_SESSION_EXIT_CODE
 from vsc.zk.depthwalk import get_pathlist, encode_paths, decode_path
 from vsc.zk.rsync.controller import RsyncController
 
@@ -64,9 +64,10 @@ class RsyncSource(RsyncController):
 
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
-                 auth_data=None, rsyncpath=None, rsyncdepth=-1, rsubpaths=[],
-                 netcat=False, dryrun=False, delete=False, checksum=False, hardlinks=False, verbose=False,
-                 excludere=None, excl_usr=None, verifypath=True, arbitopts=[]):
+                 auth_data=None, rsyncpath=None, rsyncdepth=-1, rsubpaths=None,
+                 netcat=False, dryrun=False, delete=False, checksum=False, 
+                 hardlinks=False, verbose=False, dropcache=False, timeout=None,
+                 excludere=None, excl_usr=None, verifypath=True, done_file=None, arbitopts=None):
 
         kwargs = {
             'hosts'       : hosts,
@@ -76,7 +77,8 @@ class RsyncSource(RsyncController):
             'auth_data'   : auth_data,
             'rsyncpath'   : rsyncpath,
             'verifypath'  : verifypath,
-            'netcat'      : netcat
+            'netcat'      : netcat,
+            'dropcache'   : dropcache,
         }
         super(RsyncSource, self).__init__(**kwargs)
 
@@ -99,7 +101,9 @@ class RsyncSource(RsyncController):
         self.rsync_delete = delete
         self.rsync_dry = dryrun
         self.rsync_hardlinks = hardlinks
+        self.rsync_timeout = timeout
         self.rsync_verbose = verbose
+        self.done_file = done_file
         self.excludere = excludere
         self.excl_usr = excl_usr
         self.rsubpaths = rsubpaths
@@ -207,9 +211,32 @@ class RsyncSource(RsyncController):
             time.sleep(self.WAITTIME)
         self.cleanup()
 
+    def get_state(self):
+        """Get the state of a running session"""
+        remain = self.len_paths()
+        if remain > 0:
+            code = 0
+            self.log.info('Remaining: %s, Failed: %s' % (remain, len(self.failed_queue)))
+        else:
+            code = ZKRS_NO_SUCH_SESSION_EXIT_CODE
+            self.log.info('No active session')
+        return code
+
+    def write_donefile(self, values):
+        """ Write a cachefile with some stats about the run when done """
+
+        cache_file = FileCache(self.done_file)
+        cache_file.update('stats', values, 0)
+        cache_file.close()
+
     def cleanup(self):
         """ Remove all session nodes in zookeeper after first logging the output queues """
 
+        values = {
+            'unfinished' : len(self.path_queue),
+            'failed' : len(self.path_queue),
+            'completed' : len(self.completed_queue)
+        }
         while (len(self.path_queue) > 0):
             self.log.warning('Unfinished Path %s' % self.path_queue.get())
             self.path_queue.consume()
@@ -239,6 +266,10 @@ class RsyncSource(RsyncController):
         self.release_lock()
         self.log.info('Cleanup done: Lock, Queues and watch removed')
 
+        if self.done_file:
+            self.write_donefile(values)
+
+
     def generate_file(self, path):
         """
         Writes the relative path used for the rsync of this path, 
@@ -251,8 +282,8 @@ class RsyncSource(RsyncController):
             subpath = subpath.strip(os.path.sep)
 
             fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
-            file = os.fdopen(fd, "w")
-            file.write('%s/' % subpath)
+            wfile = os.fdopen(fd, "w")
+            wfile.write('%s/' % subpath)
             return name
 
     def attempt_run(self, path, attempts=3):
@@ -267,7 +298,7 @@ class RsyncSource(RsyncController):
                 self.path_queue.consume()  # But stop locking it
                 time.sleep(self.TIME_OUT)  # Wait before new attempt
                 return 1, None
-            port, host, other = tuple(dest.split(':', 2))
+            port, host, _ = tuple(dest.split(':', 2))
 
             if self.netcat:
                 code, output = self.run_netcat(path, host, port)
@@ -297,7 +328,7 @@ class RsyncSource(RsyncController):
         lines = output.splitlines()
         for line in lines:
             keyval = line.split(':')
-            if len(keyval) < 2:
+            if len(keyval) < 2 or keyval[1] == ' ':
                 self.log.debug('output line not parsed: %s' % line)
                 continue
             key = re.sub(' ', '_', keyval[0])
@@ -308,20 +339,24 @@ class RsyncSource(RsyncController):
                 continue
             self.counters[key] += int(val)
 
-    def get_flags(self, file, recursive):
+    def get_flags(self, files, recursive):
         """
         Make an array of flags to be used
         """
         # Start rsync recursive or non recursive; archive mode (a) is equivalent to  -rlptgoD (see man rsync)
-        flags = ['--stats', '--numeric-ids', '-lptgoD', '--files-from=%s' % file]
+        flags = ['--stats', '--numeric-ids', '-lptgoD', '--files-from=%s' % files]
         if recursive:
             flags.append('-r')
         if self.rsync_delete:
             flags.append('--delete')
         if self.rsync_checksum:
             flags.append('--checksum')
+        if self.rsync_dropcache:
+            flags.append('--drop-cache')
         if self.rsync_hardlinks:
             flags.append('--hard-links')
+        if self.rsync_timeout:
+            flags.extend(['--timeout', str(self.rsync_timeout)])
         if self.rsync_verbose:
             flags.append('--verbose')
         if self.rsync_dry:
@@ -342,15 +377,15 @@ class RsyncSource(RsyncController):
         It uses the destination module linked with this session.
         """
         path, recursive = decode_path(encpath)
-        file = self.generate_file(path)
-        flags = self.get_flags(file, recursive)
+        gfile = self.generate_file(path)
+        flags = self.get_flags(gfile, recursive)
 
         self.log.info('%s is sending path %s to %s %s' % (self.whoami, path, host, port))
         self.log.debug('Used flags: "%s"' % ' '.join(flags))
         command = 'rsync %s %s/ rsync://%s:%s/%s' % (' '.join(flags), self.rsyncpath,
                                                      host, port, self.module)
         code, output = RunAsyncLoopLog.run(command)
-        os.remove(file)
+        os.remove(gfile)
         parsed = self.parse_output(output)
         return code, parsed
 
@@ -428,7 +463,7 @@ class RsyncSource(RsyncController):
                 return None
             else:
                 portmap = '%s/portmap/%s' % (self.session, whoami)
-                lport, stat = self.get_znode(portmap)
+                lport, _ = self.get_znode(portmap)
                 if port != lport:
                     self.log.error('destination port not valid')  # Should not happen
                     self.dest_queue.consume()

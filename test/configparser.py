@@ -1,14 +1,14 @@
 #
-# Copyright 2012-2013 Ghent University
+# Copyright 2012-2016 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-zk
+# https://github.com/hpcugent/vsc-zk
 #
 # vsc-zk is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Library General Public License as
@@ -32,7 +32,7 @@ Unit tests for configparser
 import vsc.zk.configparser as cp
 
 from kazoo.security import make_digest_acl, ACL, Id
-from unittest import TestCase, TestLoader
+from vsc.install.testing import TestCase
 
 class ConfigParserTest(TestCase):
     """Tests for depthwalk"""
@@ -49,6 +49,7 @@ class ConfigParserTest(TestCase):
                              'root': {'passwd': 'admin', 'path': '/'}}
 
         self.rootacl = make_digest_acl('root', 'admin', all=True)
+        super(ConfigParserTest, self).setUp()
 
     def test_rootinfo(self):
         """Checks if root info got parsed correctly"""
@@ -65,38 +66,3 @@ class ConfigParserTest(TestCase):
                 'sys': {'passwd': ['sis']}, 'kwaegema': {'passwd': ['w00f']}})
         cp.get_rootinfo(self.cfgremainder)
         self.assertEqual(cp.parse_zkconfig(self.cfgremainder), res)
-
-
-    def tearDown(self):
-        pass
-
-def suite():
-    """ returns all the testcases in this module """
-    return TestLoader().loadTestsFromTestCase(ConfigParserTest)
-
-if __name__ == '__main__':
-    """Use this __main__ block to help write and test unittests
-        just uncomment the parts you need
-    """
-#     cfgremainder = {'user4': {'passwd': 'bla'}, 'user5': {'passwd': 'bla'}, 'user2': {'passwd': 'bar'},
-#                              'user3': {'passwd': 'bla'}, 'user1': {'passwd': 'xyz'}, 'rsync': {'passwd': 'w00f'},
-#                              'sys': {'passwd': 'sis'}, 'kwaegema': {'passwd': 'w00f'}, '/admin/tools': {'all': 'sys'},
-#                              '/admin/rsync': {'rwcd': 'rsync,kwaegema', 'all': ''},
-#                              '/admin': {'rwcd': 'user1', 'c': 'user3', 'rw': 'user4,user3', 'all': '',
-#                                         'cd': 'user2', 'r': 'user5'},
-#                              '/admin/user1': {'all': 'user1', 'r': 'user2,user3', 'rw': 'user4'},
-#                              'root': {'passwd': 'admin', 'path': '/'}}
-#
-#     print cp.get_rootinfo(cfgremainder)
-#     print cp.parse_zkconfig(cfgremainder)
-#     znodes, users = cp.parse_zkconfig(cfgremainder)
-#     print znodes
-#     users = {'user4': {'passwd': ['bla']}, 'user5': {'passwd': ['bla']}, 'user2': {'passwd': ['bar']},
-#                 'user3': {'passwd': ['bla']}, 'user1': {'passwd': ['xyz']}, 'rsync': {'passwd': ['w00f']},
-#                 'sys': {'passwd': ['sis']}, 'kwaegema': {'passwd': ['w00f']}}
-#     rootacl = make_digest_acl('root', 'admin', all=True)
-#
-#     for path, attrs in znodes.iteritems():
-#         acls = dict((arg, attrs[arg]) for arg in attrs)
-#         print acls
-#         print cp.parse_acls(acls, users, rootacl)

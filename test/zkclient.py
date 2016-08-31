@@ -1,14 +1,14 @@
 #
-# Copyright 2012-2013 Ghent University
+# Copyright 2012-2016 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-zk
+# https://github.com/hpcugent/vsc-zk
 #
 # vsc-zk is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Library General Public License as
@@ -30,25 +30,26 @@ Unit tests for VscKazooClient and childs
 """
 import sys
 import time
+import mock
 
 from kazoo.client import KazooClient
 from kazoo.recipe.party import Party
 from kazoo.recipe.queue import LockingQueue
 
-sys.modules['kazoo.client'] = __import__('mock')
-sys.modules['kazoo.recipe.queue'] = __import__('mock')
-sys.modules['kazoo.recipe.party'] = __import__('mock')
+# same as in statcounter
+sys.modules['kazoo.client'] = __import__('mocky')
+sys.modules['kazoo.recipe.queue'] = __import__('mocky')
+sys.modules['kazoo.recipe.party'] = __import__('mocky')
+sys.modules['kazoo.recipe.counter'] = __import__('mocky')
 
-from unittest import TestCase, TestLoader
-from vsc.zk.base import VscKazooClient, RunWatchLoopLog
+from vsc.install.testing import TestCase
+from vsc.utils.cache import FileCache
+from vsc.zk.base import VscKazooClient, RunWatchLoopLog, ZKRS_NO_SUCH_SESSION_EXIT_CODE
 from vsc.zk.rsync.controller import RsyncController
 from vsc.zk.rsync.destination import RsyncDestination
 from vsc.zk.rsync.source import RsyncSource
 
 class zkClientTest(TestCase):
-
-    def setUp(self):
-        pass
 
     def test_znode_path(self):
         """ Test the correct creation of a zookeeper path """
@@ -125,56 +126,26 @@ class zkClientTest(TestCase):
         val, dum = zkclient.get('/admin/rsync/new/dests/test')
         self.assertEqual(val, 'disabled')
 
-def suite():
-     """ returns all the testcases in this module """
-     return TestLoader().loadTestsFromTestCase(zkClientTest)
-
-if __name__ == '__main__':
-    """Use this __main__ block to help write and test unittests
-        just uncomment the parts you need
-    """
-
-#     zkclient = RsyncSource('dummy', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
-#     filen = zkclient.generate_file('/path/dummy/some/path')
-#     filei = open(filen, "r").read()
-#     print filei
-#    filen = zkclient.generate_file('/path/wrong/path')
-
-
-#
-#     kzclient = VscKazooClient('lalala')
-#     print kzclient.is_ready()
-#     kzclient.set_ready()
-#     print kzclient.is_ready()
-#     print kzclient.znode_path('test')
-#     print kzclient.znode_path('/admin/test')
-#
-#     kz2 = RsyncSource('dummy', rsyncpath='/tmp/', rsyncdepth=3)
-#     dummyq = LockingQueue('foo', 'bar')
-#     print kz2.attempt_run('echo test', dummyq)
+    def test_wirte_donefile(self):
+        """ Test the writing of the values to a cache file when done"""
+        donefile = "/tmp/done"
+        values = {
+            'completed' : 50,
+            'failed' : 5,
+            'unfinished' : 0
+        }
+        zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2, done_file=donefile)
+        zkclient.write_donefile(values)
+        cache_file = FileCache(donefile)
+        (timestamp, stats) = cache_file.load('stats')
+        self.assertEqual(values, stats)
 
 
-#
-#     zkclient = RsyncController('dummy', rsyncpath='/tmp', session='new')
-#     print zkclient.module
-#     print zkclient.watchpath
+    @mock.patch('vsc.zk.rsync.source.RsyncSource.len_paths')
+    def test_get_state(self, mock_len):
 
-
-#     zkclient = RsyncDestination('dummy', rsyncpath='/tmp', session='new')
-#     zkclient.pause()
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#     zkclient.activate()
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#     zkclient.pause()
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#
-#     zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
-#     print zkclient.dest_is_sane('test')
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#     zkclient.set('/admin/rsync/new/dests/test', 'active')
-#     print zkclient.dest_is_sane('test')
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#     zkclient.set('/admin/rsync/new/dests/test', 'paused')
-#     print zkclient.dest_is_sane('test')
-#     print zkclient.get('/admin/rsync/new/dests/test')
-
+        zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
+        mock_len.return_value = 5
+        self.assertEqual(zkclient.get_state(), 0)
+        mock_len.return_value = 0
+        self.assertEqual(zkclient.get_state(), ZKRS_NO_SUCH_SESSION_EXIT_CODE)

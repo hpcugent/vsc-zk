@@ -1,16 +1,15 @@
-#!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2013 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-zk
+# https://github.com/hpcugent/vsc-zk
 #
 # vsc-zk is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Library General Public License as
@@ -42,6 +41,7 @@ from vsc.utils import fancylogger
 from vsc.utils.run import RunAsyncLoopLog, RunLoopException
 
 RUNRUN_WATCH_EXITCODE = 101
+ZKRS_NO_SUCH_SESSION_EXIT_CODE = 14
 
 class RunWatchLoopLog(RunAsyncLoopLog):
     """When zookeeperclient is ready, stop"""
@@ -227,6 +227,7 @@ class VscKazooClient(KazooClient):
         """Register to watch and set to ready when watch is set to 'stop' """
         watchpath = '%s/%s' % (self.watchpath, 'ready')
         @self.DataWatch(watchpath)
+        # pylint: disable=unused-variable,unused-argument
         def ready_watcher(data, stat):
             self.log.debug("Watch status is %s" % data)
             if data == 'stop':

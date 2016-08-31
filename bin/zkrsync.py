@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2013 Ghent University
+# Copyright 2013-2016 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-zk
+# https://github.com/hpcugent/vsc-zk
 #
 # vsc-zk is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Library General Public License as
@@ -37,14 +37,10 @@ import stat
 import sys
 import time
 
-from kazoo.recipe.lock import Lock
-from kazoo.recipe.queue import LockingQueue
-from kazoo.recipe.watchers import DataWatch
 from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
 from vsc.utils.daemon import Daemon
 from vsc.utils.generaloption import simple_option
-from vsc.zk.configparser import get_rootinfo, parse_zkconfig, parse_acls
 from vsc.zk.rsync.destination import RsyncDestination
 from vsc.zk.rsync.source import RsyncSource
 
@@ -101,10 +97,11 @@ def init_pidfile(pidfile, session, rstype):
 
 def get_state(servers, kwargs):
     """Get the state of a running session"""
-    rsyncP = RsyncSource(go.options.servers, **kwargs)
-    rsyncP.output_progress(rsyncP.len_paths(), rsyncP.paths_total)
+    kwargs['verifypath'] = False # Not needed for state info
+    rsyncP = RsyncSource(servers, rsyncdepth=0, **kwargs)
+    code = rsyncP.get_state()
     rsyncP.exit()
-    sys.exit(0)
+    sys.exit(code)
 
 def do_pathsonly(options, kwargs):
     """Only build the pathqueue and return timings"""
@@ -149,11 +146,13 @@ def start_source(options, kwargs):
     kwargs['rsubpaths'] = options.rsubpaths
     kwargs['arbitopts'] = options.arbitopts
     kwargs['checksum'] = options.checksum
+    kwargs['done_file'] = options.done_file
     kwargs['dryrun'] = options.dryrun
     kwargs['delete'] = options.delete
     kwargs['excludere'] = options.excludere
     kwargs['excl_usr'] = options.excl_usr
     kwargs['hardlinks'] = options.hardlinks
+    kwargs['timeout'] = options.timeout
     kwargs['verbose'] = options.verbose
     # Start zookeeper connections
     rsyncS = RsyncSource(options.servers, **kwargs)
@@ -165,7 +164,7 @@ def start_source(options, kwargs):
         watchnode = rsyncS.start_ready_rwatch()
         if not watchnode:
             sys.exit(1)
-        paths_total = rsyncS.build_pathqueue()
+        rsyncS.build_pathqueue()
         rsyncS.wait_and_keep_progress()
         rsyncS.shutdown_all()
 
@@ -249,8 +248,11 @@ def main():
         'verifypath'  : ('Check basepath exists while running', None, 'store_false', True),
         'daemon'      : ('daemonize client', None, 'store_true', False),
         'domain'      : ('substitute domain', None, 'store', None),
+        'done-file'   : ('cachefile to write state to when done', None, 'store', None),
+        'dropcache'   : ('run rsync with --drop-cache', None, 'store_true', False),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
         'pidfile'     : ('Pidfile template', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.pid'),
+        'timeout'     : ('run rsync with --timeout TIMEOUT',  "int", 'store', 0),
         'verbose'     : ('run rsync with --verbose', None, 'store_true', False),
         # Individual Destination client specific options
         'rsyncport'   : ('force port on which rsyncd binds', "int", 'store', None),
@@ -274,6 +276,7 @@ def main():
         'rsyncpath'   : go.options.rsyncpath,
         'netcat'      : go.options.netcat,
         'verifypath'  : go.options.verifypath,
+        'dropcache'   : go.options.dropcache,
         }
 
     if go.options.daemon:
