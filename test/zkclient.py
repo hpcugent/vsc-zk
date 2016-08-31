@@ -36,11 +36,13 @@ from kazoo.client import KazooClient
 from kazoo.recipe.party import Party
 from kazoo.recipe.queue import LockingQueue
 
+# same as in statcounter
 sys.modules['kazoo.client'] = __import__('mocky')
 sys.modules['kazoo.recipe.queue'] = __import__('mocky')
 sys.modules['kazoo.recipe.party'] = __import__('mocky')
+sys.modules['kazoo.recipe.counter'] = __import__('mocky')
 
-from unittest import TestCase, TestLoader
+from vsc.install.testing import TestCase
 from vsc.utils.cache import FileCache
 from vsc.zk.base import VscKazooClient, RunWatchLoopLog, ZKRS_NO_SUCH_SESSION_EXIT_CODE
 from vsc.zk.rsync.controller import RsyncController
@@ -48,9 +50,6 @@ from vsc.zk.rsync.destination import RsyncDestination
 from vsc.zk.rsync.source import RsyncSource
 
 class zkClientTest(TestCase):
-
-    def setUp(self):
-        pass
 
     def test_znode_path(self):
         """ Test the correct creation of a zookeeper path """
@@ -150,58 +149,3 @@ class zkClientTest(TestCase):
         self.assertEqual(zkclient.get_state(), 0)
         mock_len.return_value = 0
         self.assertEqual(zkclient.get_state(), ZKRS_NO_SUCH_SESSION_EXIT_CODE)
-
-
-def suite():
-     """ returns all the testcases in this module """
-     return TestLoader().loadTestsFromTestCase(zkClientTest)
-
-if __name__ == '__main__':
-    """Use this __main__ block to help write and test unittests
-        just uncomment the parts you need
-    """
-
-#     zkclient = RsyncSource('dummy', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
-#     filen = zkclient.generate_file('/path/dummy/some/path')
-#     filei = open(filen, "r").read()
-#     print filei
-#    filen = zkclient.generate_file('/path/wrong/path')
-
-
-#
-#     kzclient = VscKazooClient('lalala')
-#     print kzclient.is_ready()
-#     kzclient.set_ready()
-#     print kzclient.is_ready()
-#     print kzclient.znode_path('test')
-#     print kzclient.znode_path('/admin/test')
-#
-#     kz2 = RsyncSource('dummy', rsyncpath='/tmp/', rsyncdepth=3)
-#     dummyq = LockingQueue('foo', 'bar')
-#     print kz2.attempt_run('echo test', dummyq)
-
-
-#
-#     zkclient = RsyncController('dummy', rsyncpath='/tmp', session='new')
-#     print zkclient.module
-#     print zkclient.watchpath
-
-
-#     zkclient = RsyncDestination('dummy', rsyncpath='/tmp', session='new')
-#     zkclient.pause()
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#     zkclient.activate()
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#     zkclient.pause()
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#
-#     zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
-#     print zkclient.dest_is_sane('test')
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#     zkclient.set('/admin/rsync/new/dests/test', 'active')
-#     print zkclient.dest_is_sane('test')
-#     print zkclient.get('/admin/rsync/new/dests/test')
-#     zkclient.set('/admin/rsync/new/dests/test', 'paused')
-#     print zkclient.dest_is_sane('test')
-#     print zkclient.get('/admin/rsync/new/dests/test')
-
