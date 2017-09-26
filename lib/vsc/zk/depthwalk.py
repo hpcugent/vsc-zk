@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2016 Ghent University
+# Copyright 2013-2017 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -54,14 +54,14 @@ def depthwalk(path, depth=1):
             del dirs[:]
 
 def exclude_path(path, exclude_re, ex_uid):
-        """Exclude a path if it matches exclude_re and is owned by ex_uid"""
-        if exclude_re:
-            regfound = exclude_re.search(path)
-            if regfound and ex_uid is not None:
-                return os.stat(path).st_uid == ex_uid
-            else:
-                return regfound
-        return False
+    """Exclude a path if it matches exclude_re and is owned by ex_uid"""
+    if exclude_re:
+        regfound = exclude_re.search(path)
+        if regfound and ex_uid is not None:
+            return os.stat(path).st_uid == ex_uid
+        else:
+            return regfound
+    return False
 
 def build_paths(path, depth, exclude_re=None, exclude_usr=None):
     """
@@ -133,7 +133,8 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=None)
             subpathdepth = subpath.count(os.path.sep)
             newdepth = subpathdepth + int(subdepth)
             if newdepth < depthlevel :  # deepest paths should be specified last
-                logger.raiseException('depthlevel %d for subpath %s is not as deep as current depthlevel %d!' % (newdepth, subpath, depthlevel))
+                logger.raiseException('depthlevel %d for subpath %s is not as deep as current depthlevel %d!'
+                    % (newdepth, subpath, depthlevel))
             else:
                 depthlevel = newdepth
                 sublist = build_paths(subpath, int(subdepth), exclude_re, exclude_usr)
