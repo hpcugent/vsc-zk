@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2016 Ghent University
+# Copyright 2013-2017 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -158,7 +158,8 @@ class RsyncSource(RsyncController):
             time.sleep(self.SLEEPTIME)
         else:
             tuplpaths = get_pathlist(self.rsyncpath, self.rsyncdepth, exclude_re=self.excludere,
-                                     exclude_usr=self.excl_usr, rsubpaths=self.rsubpaths)  # By default don't exclude user files
+                                    # By default don't exclude user files
+                                    exclude_usr=self.excl_usr, rsubpaths=self.rsubpaths)
             paths = encode_paths(tuplpaths)
         self.paths_total = len(paths)
         for path in paths:
@@ -171,7 +172,8 @@ class RsyncSource(RsyncController):
         return len(self.path_queue) == 0
 
     def output_progress(self, todo):
-        self.log.info('Progress: %s of %s paths remaining, %s failed' % (todo, self.paths_total, len(self.failed_queue)))
+        self.log.info('Progress: %s of %s paths remaining, %s failed'
+            % (todo, self.paths_total, len(self.failed_queue)))
         self.output_stats()
 
     def output_clients(self, total, sources):
@@ -234,7 +236,7 @@ class RsyncSource(RsyncController):
 
         values = {
             'unfinished' : len(self.path_queue),
-            'failed' : len(self.path_queue),
+            'failed' : len(self.failed_queue),
             'completed' : len(self.completed_queue)
         }
         while (len(self.path_queue) > 0):
@@ -480,4 +482,4 @@ class RsyncSource(RsyncController):
         path = self.path_queue.get(timeout)
         if path:
             if self.rsync_path(path):
-                    self.path_queue.consume()
+                self.path_queue.consume()
