@@ -47,7 +47,7 @@ from vsc.zk.rsync.controller import RsyncController
 
 class RsyncSource(RsyncController):
     """
-    Class for controlling rsync with Zookeeper. 
+    Class for controlling rsync with Zookeeper.
     Builds a tree of paths to devide, and effectively rsyncs the subpaths.
     Stops when ready
     """
@@ -58,15 +58,15 @@ class RsyncSource(RsyncController):
     TIME_OUT = 5  # waiting for destination
     WAITTIME = 5  # check interval of closure of other clients
     CHECK_WAIT = 20  # wait for path to be available
-    RSYNC_STATS = ['Number_of_files', 'Number_of_files_transferred', 'Total_file_size',
+    RSYNC_STATS = ['Number_of_files', 'Number_of_regular_files_transferred', 'Total_file_size',
                    'Total_transferred_file_size', 'Literal_data', 'Matched_data', 'File_list_size',
                    'Total_bytes_sent', 'Total_bytes_received'];
 
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
                  auth_data=None, rsyncpath=None, rsyncdepth=-1, rsubpaths=None,
-                 netcat=False, dryrun=False, delete=False, checksum=False, 
-                 hardlinks=False, verbose=False, dropcache=False, timeout=None,
+                 netcat=False, dryrun=False, delete=False, checksum=False,
+                 hardlinks=False, inplace=False, verbose=False, dropcache=False, timeout=None,
                  excludere=None, excl_usr=None, verifypath=True, done_file=None, arbitopts=None):
 
         kwargs = {
@@ -101,6 +101,7 @@ class RsyncSource(RsyncController):
         self.rsync_delete = delete
         self.rsync_dry = dryrun
         self.rsync_hardlinks = hardlinks
+        self.rsync_inplace = inplace
         self.rsync_timeout = timeout
         self.rsync_verbose = verbose
         self.done_file = done_file
@@ -203,7 +204,7 @@ class RsyncSource(RsyncController):
         return len(self.path_queue)
 
     def shutdown_all(self):
-        """ Send end signal and release lock 
+        """ Send end signal and release lock
         Make sure other clients are disconnected, clean up afterwards."""
         self.stop_ready_watch()
         self.log.debug('watch set to stop')
@@ -274,8 +275,8 @@ class RsyncSource(RsyncController):
 
     def generate_file(self, path):
         """
-        Writes the relative path used for the rsync of this path, 
-        for use by --files-from. 
+        Writes the relative path used for the rsync of this path,
+        for use by --files-from.
         """
         if not path.startswith(self.rsyncpath):
             self.log.raiseException('Invalid path! %s is not a subpath of %s!' % (path, self.rsyncpath))
@@ -357,6 +358,8 @@ class RsyncSource(RsyncController):
             flags.append('--drop-cache')
         if self.rsync_hardlinks:
             flags.append('--hard-links')
+        if self.rsync_inplace:
+            flags.append('--inplace')
         if self.rsync_timeout:
             flags.extend(['--timeout', str(self.rsync_timeout)])
         if self.rsync_verbose:
@@ -431,7 +434,7 @@ class RsyncSource(RsyncController):
         return self.dest_state(dest, self.STATUS)
 
     def handle_dest_state(self, dest, destpath, current_state):
-        """ 
+        """
         Disable destination by consuming it from queue when paused and return false
         If destination is active, return true
         """
@@ -447,7 +450,7 @@ class RsyncSource(RsyncController):
             return False
 
     def try_a_dest(self, timeout):
-        """ 
+        """
         Try to get a destination.
         check if destination is still running, otherwise remove
         """
