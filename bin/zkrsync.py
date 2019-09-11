@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2017 Ghent University
+# Copyright 2013-2019 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -152,6 +152,7 @@ def start_source(options, kwargs):
     kwargs['excludere'] = options.excludere
     kwargs['excl_usr'] = options.excl_usr
     kwargs['hardlinks'] = options.hardlinks
+    kwargs['inplace'] = options.inplace
     kwargs['timeout'] = options.timeout
     kwargs['verbose'] = options.verbose
     # Start zookeeper connections
@@ -244,6 +245,7 @@ def main():
         'delete'      : ('run rsync with --delete', None, 'store_true', False),
         'checksum'    : ('run rsync with --checksum', None, 'store_true', False),
         'hardlinks'   : ('run rsync with --hard-links', None, 'store_true', False),
+        'inplace'     : ('run rsync with --inplace', None, 'store_true', False),
         # Individual client options
         'verifypath'  : ('Check basepath exists while running', None, 'store_false', True),
         'daemon'      : ('daemonize client', None, 'store_true', False),
