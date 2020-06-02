@@ -44,14 +44,13 @@ def depthwalk(path, depth=1):
     http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
     """
     path = path.rstrip(os.path.sep)
-    assert depth > 0
-    assert os.path.isdir(path)
-    pathdepth = path.count(os.path.sep)
-    for root, dirs, files in os.walk(path):
-        yield root, dirs, files
-        subpathdepth = root.count(os.path.sep)
-        if pathdepth + depth - 1 <= subpathdepth:
-            del dirs[:]
+    if depth > 0 and os.path.isdir(path):
+        pathdepth = path.count(os.path.sep)
+        for root, dirs, files in os.walk(path):
+            yield root, dirs, files
+            subpathdepth = root.count(os.path.sep)
+            if pathdepth + depth - 1 <= subpathdepth:
+                del dirs[:]
 
 def exclude_path(path, exclude_re, ex_uid):
     """Exclude a path if it matches exclude_re and is owned by ex_uid"""
