@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2019 Ghent University
+# Copyright 2013-2020 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -237,7 +237,8 @@ def main():
         'dryrun'      : ('run rsync in dry run mode', None, 'store_true', False, 'n'),
         'rsyncpath'   : ('rsync basepath', None, 'store', None, 'r'),  # May differ between sources and dests
         # Pathbuilding (Source clients and pathsonly ) specific options:
-        'rsubpaths'   : ('rsync subpaths, specified as <depth>_<path>, with deepest paths last', 'strlist', 'store', None),
+        'rsubpaths'   : ('rsync subpaths, specified as <depth>_<path>, with deepest paths last',
+                            'strlist', 'store', None),
         'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
         'excl_usr'    : ('If set, exclude paths for this user only when using excludere', None, 'store', 'root'),
         'depth'       : ('queue depth', "int", 'store', 3),
@@ -254,7 +255,7 @@ def main():
         'dropcache'   : ('run rsync with --drop-cache', None, 'store_true', False),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
         'pidfile'     : ('Pidfile template', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.pid'),
-        'timeout'     : ('run rsync with --timeout TIMEOUT',  "int", 'store', 0),
+        'timeout'     : ('run rsync with --timeout TIMEOUT', "int", 'store', 0),
         'verbose'     : ('run rsync with --verbose', None, 'store_true', False),
         # Individual Destination client specific options
         'rsyncport'   : ('force port on which rsyncd binds', "int", 'store', None),

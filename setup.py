@@ -31,16 +31,16 @@ vsc-zk base distribution setup.py
 @author: Stijn De Weirdt (Ghent University)
 """
 import vsc.install.shared_setup as shared_setup
-from vsc.install.shared_setup import ag, kw, sdw
+from vsc.install.shared_setup import kw, sdw
 
 PACKAGE = {
-    'version': '0.9.9',
+    'version': '0.9.10',
     'author': [sdw, kw],
     'maintainer': [sdw, kw],
     'install_requires': [
         'vsc-base >= 1.6.7',
         'kazoo >= 1.3',
-        'vsc-utils >= 1.7.7',
+        'vsc-utils >= 2.1.0',
     ],
 }
 

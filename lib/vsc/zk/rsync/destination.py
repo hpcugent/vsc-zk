@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2019 Ghent University
+# Copyright 2013-2020 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -31,13 +31,13 @@ zk.rsync destination
 @author: Kenneth Waegeman (Ghent University)
 """
 
-import ConfigParser
 import os
 import socket
 import tempfile
 
 from vsc.zk.base import RunWatchLoopLog
 from vsc.zk.rsync.controller import RsyncController
+from vsc.utils.py2vs3 import configparser
 
 class RunDestination(RunWatchLoopLog):
     """When zookeeperclient is ready, stop"""
@@ -78,7 +78,7 @@ class RunDestination(RunWatchLoopLog):
 
 class RsyncDestination(RsyncController):
     """
-    Class for controlling rsync with Zookeeper. 
+    Class for controlling rsync with Zookeeper.
     Starts an rsync daemon available for the RsyncSources. Stops when ready
     """
     BASE_PARTIES = RsyncController.BASE_PARTIES + ['dests']
@@ -130,7 +130,7 @@ class RsyncDestination(RsyncController):
         """ Write config file for this session """
         fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
         wfile = os.fdopen(fd, "w")
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.add_section(self.module)
         config.set(self.module, 'path', self.rsyncpath)
         config.set(self.module, 'read only', 'no')
@@ -199,7 +199,7 @@ class RsyncDestination(RsyncController):
         """ Runs the rsync command """
         config = self.generate_daemon_config()
 
-        cmd = ['rsync', '--daemon', '--no-detach', '--config' , config, '--port', str(self.port)]
+        cmd = ['rsync', '--daemon', '--no-detach', '--config', config, '--port', str(self.port)]
         if self.rsync_dropcache:
             cmd.append('--drop-cache')
         code, output = self.run_with_watch_and_queue(' '.join(cmd))
