@@ -24,12 +24,12 @@
 # along with vsc-zk. If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Unit tests for configparser
+Unit tests for zkconfigparser
 
 @author: Kenneth Waegeman (Ghent University)
 """
 
-import vsc.zk.configparser as cp
+import vsc.zk.zkconfigparser as cp
 
 from kazoo.security import make_digest_acl, ACL, Id
 from vsc.install.testing import TestCase
