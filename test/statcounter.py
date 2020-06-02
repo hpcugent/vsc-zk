@@ -67,8 +67,28 @@ sent 40610 bytes  received 342 bytes  81904.00 bytes/sec
 total size is 39488  speedup is 0.96
 """
 
-json_output = {"Total_transferred_file_size": 39488, "Total_file_size": 39488, "File_list_size": 371, "Total_bytes_sent": 40610, "Literal_data": 39488, "Number_of_files": 55, "Total_bytes_received": 342, "Matched_data": 0, "Number_of_regular_files_transferred": 17}
-json_output2 = {"Total_transferred_file_size": 78976, "Total_file_size": 78976, "File_list_size": 742, "Total_bytes_sent": 81220, "Literal_data": 78976, "Number_of_files": 110, "Total_bytes_received": 684, "Matched_data": 0, "Number_of_regular_files_transferred": 34}
+json_output = {
+    "Total_transferred_file_size": 39488,
+    "Total_file_size": 39488,
+    "File_list_size": 371,
+    "Total_bytes_sent": 40610,
+    "Literal_data": 39488,
+    "Number_of_files": 55,
+    "Total_bytes_received": 342,
+    "Matched_data": 0,
+    "Number_of_regular_files_transferred": 17
+}
+json_output2 = {
+    "Total_transferred_file_size": 78976,
+    "Total_file_size": 78976,
+    "File_list_size": 742,
+    "Total_bytes_sent": 81220,
+    "Literal_data": 78976,
+    "Number_of_files": 110,
+    "Total_bytes_received": 684,
+    "Matched_data": 0,
+    "Number_of_regular_files_transferred": 34
+}
 
 class zkStatCounterTest(TestCase):
 
