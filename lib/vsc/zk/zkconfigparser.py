@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2019 Ghent University
+# Copyright 2013-2020 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -36,7 +36,7 @@ logger = fancylogger.getLogger()
 
 def get_rootinfo(configremainder):
     """
-    takes a hierarchical dictionary of config sections 
+    takes a hierarchical dictionary of config sections
     (see configfile_remainder attribute of simple_option)
     and returns rootpasswd and rootpath
     """
@@ -49,7 +49,7 @@ def get_rootinfo(configremainder):
 
 def parse_zkconfig(configremainder):
     """
-    takes a hierarchical dictionary of config sections 
+    takes a hierarchical dictionary of config sections
     (see configfile_remainder attribute of simple_option)
     and returns a znodes and users dict
     """
@@ -61,13 +61,13 @@ def parse_zkconfig(configremainder):
         if sect.startswith('/'):
             # Parsing paths
             znode = znodes.setdefault(sect, {})
-            for k, v in configremainder[sect].iteritems():
+            for k, v in configremainder[sect].items():
                 if v:  # don't parse empty parameters
                     znode[k] = v.split(',')
         else:
             # Parsing users
             user = users.setdefault(sect, {})
-            for k, v in configremainder[sect].iteritems():
+            for k, v in configremainder[sect].items():
                 user[k] = v.split(',')
             if 'passwd' not in user:
                 logger.raiseException('User %s has no password attribute!' % sect)

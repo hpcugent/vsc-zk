@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2019 Ghent University
+# Copyright 2013-2020 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,20 +38,19 @@ from vsc.utils import fancylogger
 logger = fancylogger.getLogger()
 
 def depthwalk(path, depth=1):
-    """ 
+    """
     Does an os.walk but goes only as deep as the depth parameter. Depth has to be greater or equal to 1
     Code is taken from
     http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
     """
     path = path.rstrip(os.path.sep)
-    assert depth > 0
-    assert os.path.isdir(path)
-    pathdepth = path.count(os.path.sep)
-    for root, dirs, files in os.walk(path):
-        yield root, dirs, files
-        subpathdepth = root.count(os.path.sep)
-        if pathdepth + depth - 1 <= subpathdepth:
-            del dirs[:]
+    if depth > 0 and os.path.isdir(path):
+        pathdepth = path.count(os.path.sep)
+        for root, dirs, files in os.walk(path):
+            yield root, dirs, files
+            subpathdepth = root.count(os.path.sep)
+            if pathdepth + depth - 1 <= subpathdepth:
+                del dirs[:]
 
 def exclude_path(path, exclude_re, ex_uid):
     """Exclude a path if it matches exclude_re and is owned by ex_uid"""
@@ -66,9 +65,9 @@ def exclude_path(path, exclude_re, ex_uid):
 def build_paths(path, depth, exclude_re=None, exclude_usr=None):
     """
     Returns a list of (path, recursive) tuples under path with the maximum depth specified.
-    Depth 0 is the basepath itself. 
+    Depth 0 is the basepath itself.
     Recursive is True if and only if it is exactly on the depth specified.
-    Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders) 
+    Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders)
     """
     ex_uid = None
     if exclude_usr:
@@ -108,9 +107,9 @@ def build_paths(path, depth, exclude_re=None, exclude_usr=None):
 def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=None):
     """
     Returns a list of (path, recursive) tuples under path with the maximum depth specified.
-    Depth 0 is the basepath itself. 
+    Depth 0 is the basepath itself.
     Recursive is True if and only if it is exactly on the depth specified.
-    Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders) 
+    Exclude_re is a regex to exclude, if it belongs to exclude_usr. (used for eg. excluding snapshot folders)
     if subpaths are given with rsubpaths, these are also walked with the given depth, and merged into the list
     Subpaths should already be in the base path pathlist.
     """
@@ -132,7 +131,7 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=None)
 
             subpathdepth = subpath.count(os.path.sep)
             newdepth = subpathdepth + int(subdepth)
-            if newdepth < depthlevel :  # deepest paths should be specified last
+            if newdepth < depthlevel:  # deepest paths should be specified last
                 logger.raiseException('depthlevel %d for subpath %s is not as deep as current depthlevel %d!'
                     % (newdepth, subpath, depthlevel))
             else:

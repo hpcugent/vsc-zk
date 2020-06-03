@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2019 Ghent University
+# Copyright 2013-2020 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -39,7 +39,7 @@ from vsc.zk.base import VscKazooClient
 
 class RsyncController(VscKazooClient):
     """
-    Class for controlling Rsync with Zookeeper. 
+    Class for controlling Rsync with Zookeeper.
     Use the child classes RsyncSource and RsyncDestination.
     """
 
@@ -101,10 +101,13 @@ class RsyncController(VscKazooClient):
             self.log.debug('Current state is %s, requested state is %s' % (current_state, state))
             if state == self.STATE_PAUSED:
                 self.set_paused(destpath, current_state)
+                return None
             elif state == self.STATE_ACTIVE:
                 self.set_active(destpath, current_state)
+                return None
             elif state == self.STATUS:
                 return self.handle_dest_state(dest, destpath, current_state)
             else:
                 self.log.error('No valid state: %s ' % state)
                 return None
+

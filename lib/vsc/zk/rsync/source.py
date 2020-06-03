@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2019 Ghent University
+# Copyright 2013-2020 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -41,6 +41,7 @@ from vsc.utils.cache import FileCache
 from kazoo.recipe.counter import Counter
 from kazoo.recipe.queue import LockingQueue
 from vsc.utils.run import RunAsyncLoopLog
+from vsc.utils.py2vs3 import is_string
 from vsc.zk.base import ZKRS_NO_SUCH_SESSION_EXIT_CODE
 from vsc.zk.depthwalk import get_pathlist, encode_paths, decode_path
 from vsc.zk.rsync.controller import RsyncController
@@ -280,6 +281,7 @@ class RsyncSource(RsyncController):
         """
         if not path.startswith(self.rsyncpath):
             self.log.raiseException('Invalid path! %s is not a subpath of %s!' % (path, self.rsyncpath))
+            return None
         else:
             subpath = path[len(self.rsyncpath):]
             subpath = subpath.strip(os.path.sep)
@@ -406,8 +408,10 @@ class RsyncSource(RsyncController):
         """ start rsync session for given path and destination, returns true if successful """
         if not path:
             self.log.raiseException('Empty path given!')
-        elif not isinstance(path, basestring):
+            return None
+        elif not is_string(path):
             self.log.raiseException('Invalid path: %s !' % path)
+            return None
         else:
             code, output = self.attempt_run(path)
             if output:
@@ -486,3 +490,4 @@ class RsyncSource(RsyncController):
         if path:
             if self.rsync_path(path):
                 self.path_queue.consume()
+        return None

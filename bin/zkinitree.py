@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2019 Ghent University
+# Copyright 2013-2020 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -35,7 +35,7 @@ from kazoo.security import make_digest_acl
 from vsc.utils import fancylogger
 from vsc.utils.generaloption import simple_option
 from vsc.zk.base import VscKazooClient
-from vsc.zk.configparser import get_rootinfo, parse_zkconfig, parse_acls
+from vsc.zk.zkconfigparser import get_rootinfo, parse_zkconfig, parse_acls
 
 logger = fancylogger.getLogger()
 

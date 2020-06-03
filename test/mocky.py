@@ -60,7 +60,7 @@ class KazooClient(object):
         pass
 
     def print_objs(self):
-        print  self.objs
+        print(self.objs)
 
 class Lock(object):
     def __init__(self, dummy1):
