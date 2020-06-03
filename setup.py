@@ -38,7 +38,7 @@ PACKAGE = {
     'author': [sdw, kw],
     'maintainer': [sdw, kw],
     'install_requires': [
-        'vsc-base >= 1.6.7',
+        'vsc-base >= 3.0.0',
         'kazoo >= 1.3',
         'vsc-utils >= 2.1.0',
     ],
