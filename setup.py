@@ -34,12 +34,12 @@ import vsc.install.shared_setup as shared_setup
 from vsc.install.shared_setup import kw, sdw
 
 PACKAGE = {
-    'version': '1.0.0',
+    'version': '2.0.0',
     'author': [sdw, kw],
     'maintainer': [sdw, kw],
     'install_requires': [
-        'vsc-base >= 3.0.0',
-        'kazoo >= 1.3',
+        'vsc-base >= 3.2.1',
+        'kazoo >= 2.8',
         'vsc-utils >= 2.1.0',
     ],
 }
