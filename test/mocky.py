@@ -24,7 +24,7 @@
 # along with vsc-zk. If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Mocking module for Kazoo/Zookeeper classes 
+Mocking module for Kazoo/Zookeeper classes
 
 @author: Kenneth Waegeman (Ghent University)
 """
@@ -46,11 +46,17 @@ class KazooClient(object):
     def set(self, obj, value):
         self.objs[obj] = value;
 
+    def setstr(self, obj, value):
+        self.set(obj, value.encode());
+
     def create(self, obj, value, **kw):
         return self.set(obj, value)
 
     def get(self, obj):
         return (self.objs[obj], 'dummy')
+
+    def getstr(self, obj):
+        return (self.objs[obj].decode(), 'dummy')
 
     def exists(self, obj):
         return obj in self.objs
