@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2020 Ghent University
+# Copyright 2013-2021 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -147,7 +147,7 @@ class VscKazooClient(KazooClient):
         znode_path = self.znode_path(znode)
         self.log.debug("creating znode path: %s" % znode_path)
         try:
-            znode = self.create(znode_path, value=value, acl=acl, **kwargs)
+            znode = self.create(znode_path, value=value.encode(), acl=acl, **kwargs)
         except NodeExistsError:
             self.log.raiseException('znode %s already exists' % znode_path)
         except NoNodeError:
@@ -163,11 +163,12 @@ class VscKazooClient(KazooClient):
 
     def set_znode(self, znode=None, value=''):
         znode_path = self.znode_path(znode)
-        return self.set(znode_path, str(value))
+        return self.set(znode_path, value.encode())
 
     def get_znode(self, znode=None):
         znode_path = self.znode_path(znode)
-        return self.get(znode_path)
+        data, stat = self.get(znode_path)
+        return data.decode(), stat
 
     def znode_acls(self, znode=None, acl=None):
         """set the acl on a znode"""
@@ -184,7 +185,7 @@ class VscKazooClient(KazooClient):
     def set_watch_value(self, watch, value):
         """Sets the value of an existing watch"""
         watchpath = '%s/%s' % (self.watchpath, watch)
-        self.set(watchpath, value)
+        self.set(watchpath, value.encode())
 
     def new_watch(self, watch, value):
         """ Start a watch other clients can register to """
