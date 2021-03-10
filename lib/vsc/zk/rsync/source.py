@@ -165,7 +165,7 @@ class RsyncSource(RsyncController):
             paths = encode_paths(tuplpaths)
         self.paths_total = len(paths)
         for path in paths:
-            self.path_queue.put(path)  # Put_all can issue a zookeeper connection error with big lists
+            self.path_queue.put(path.encode())  # Put_all can issue a zookeeper connection error with big lists
         self.log.info('pathqueue building finished')
         return self.paths_total
 
@@ -242,7 +242,7 @@ class RsyncSource(RsyncController):
             'completed' : len(self.completed_queue)
         }
         while (len(self.path_queue) > 0):
-            self.log.warning('Unfinished Path %s' % self.path_queue.get())
+            self.log.warning('Unfinished Path %s' % self.path_queue.get().decode())
             self.path_queue.consume()
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.path_queue.path, recursive=True)
@@ -251,16 +251,16 @@ class RsyncSource(RsyncController):
         self.delete(self.znode_path(self.stats_path), recursive=True)
 
         while (len(self.failed_queue) > 0):
-            self.log.error('Failed Path %s' % self.failed_queue.get())
+            self.log.error('Failed Path %s' % self.failed_queue.get().decode())
             self.failed_queue.consume()
 
         while (len(self.completed_queue) > 0):
-            self.log.info('Completed Path %s' % self.completed_queue.get())
+            self.log.info('Completed Path %s' % self.completed_queue.get().decode())
             self.completed_queue.consume()
 
         self.log.info('Output:')
         while (len(self.output_queue) > 0):
-            self.log.info(self.output_queue.get())
+            self.log.info(self.output_queue.get().decode())
             self.output_queue.consume()
 
         self.delete(self.completed_queue.path, recursive=True)
@@ -299,7 +299,7 @@ class RsyncSource(RsyncController):
 
             dest = self.get_a_dest(attempts)  # Keeps it if not consuming
             if not dest or not self.basepath_ok():
-                self.path_queue.put(path, priority=50)  # Keep path in queue
+                self.path_queue.put(path.encode(), priority=50)  # Keep path in queue
                 self.path_queue.consume()  # But stop locking it
                 time.sleep(self.TIME_OUT)  # Wait before new attempt
                 return 1, None
@@ -310,13 +310,13 @@ class RsyncSource(RsyncController):
             else:
                 code, output = self.run_rsync(path, host, port)
             if code == 0:
-                self.completed_queue.put(path)
+                self.completed_queue.put(path.encode())
                 return code, output
             attempt += 1
             time.sleep(self.WAITTIME)  # Wait before new attempt
 
         self.log.error('There were issues with path %s!' % path)
-        self.failed_queue.put(path)
+        self.failed_queue.put(path.encode())
         return 0, output  # otherwise client get stuck
 
     def parse_output(self, output):
@@ -415,7 +415,7 @@ class RsyncSource(RsyncController):
         else:
             code, output = self.attempt_run(path)
             if output:
-                self.output_queue.put(output)
+                self.output_queue.put(output.encode())
             return (code == 0)
 
 
@@ -460,7 +460,7 @@ class RsyncSource(RsyncController):
         """
         if len(self.dest_queue) == 0:
             self.log.debug('Destinations not yet available')
-        dest = self.dest_queue.get(timeout)
+        dest = self.dest_queue.get(timeout).decode()
         if dest:
             port, whoami = tuple(dest.split(':', 1))
             if not self.member_of_party(whoami, 'allsd'):
@@ -486,7 +486,7 @@ class RsyncSource(RsyncController):
                 self.log.warning('Basepath not available, waiting')
                 time.sleep(self.CHECK_WAIT)
                 return None
-        path = self.path_queue.get(timeout)
+        path = self.path_queue.get(timeout).decode()
         if path:
             if self.rsync_path(path):
                 self.path_queue.consume()

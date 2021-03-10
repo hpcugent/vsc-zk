@@ -228,7 +228,8 @@ class RsyncDestination(RsyncController):
 
     def add_to_queue(self):
         """Add this destination to the destination queue """
-        self.dest_queue.put('%s:%s' % (self.port, self.whoami))
+        destid = '%d:%s' % (self.port, self.whoami)
+        self.dest_queue.put(destid.encode())
         self.log.info('Added destination %s to queue with port %s' % (self.whoami, self.port))
 
     def run_with_watch_and_queue(self, command):
