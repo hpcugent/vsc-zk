@@ -231,6 +231,7 @@ class VscKazooClient(KazooClient):
         @self.DataWatch(watchpath)
         # pylint: disable=unused-variable,unused-argument
         def ready_watcher(data, stat):
+            data = data.decode()
             self.log.debug("Watch status is %s" % data)
             if data == 'stop':
                 self.log.debug('End node received, set ready')
