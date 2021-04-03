@@ -49,8 +49,8 @@ def main():
     rpasswd, _ = get_rootinfo(go.configfile_remainder)
     znodes, users = parse_zkconfig(go.configfile_remainder)
 
-    logger.debug("znodes: %s" % znodes)
-    logger.debug("users: %s" % users)
+    logger.debug("znodes: %s", znodes)
+    logger.debug("users: %s", users)
 
     # Connect to zookeeper
     # initial authentication credentials and acl for admin on root level
@@ -63,14 +63,14 @@ def main():
 
     # Iterate paths
     for path, attrs in znodes.iteritems():
-        logger.debug("path %s attribs %s" % (path, attrs))
+        logger.debug("path %s attribs %s", path, attrs)
         acls = dict((arg, attrs[arg]) for arg in attrs if arg not in ('value', 'ephemeral', 'sequence', 'makepath'))
         acl_list = parse_acls(acls, users, root_acl)
         kwargs = dict((arg, attrs[arg]) for arg in attrs if arg in ('ephemeral', 'sequence', 'makepath'))
         if not zkclient.exists_znode(path):
             zkclient.make_znode(path, value=attrs.get('value', ''), acl=acl_list, **kwargs)
         else:
-            logger.warning('node %s already exists' % path)
+            logger.warning('node %s already exists', path)
             zkclient.znode_acls(path, acl_list)
 
     zkclient.exit()

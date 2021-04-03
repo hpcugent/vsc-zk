@@ -50,7 +50,7 @@ class RunWatchLoopLog(RunAsyncLoopLog):
 
         self.watchclient = kwargs.pop('watchclient', None)
         super(RunWatchLoopLog, self).__init__(cmd, **kwargs)
-        self.log.debug("watchclient %s registered" % self.watchclient)
+        self.log.debug("watchclient %s registered", self.watchclient)
 
 
     def _loop_process_output(self, output):
@@ -61,7 +61,7 @@ class RunWatchLoopLog(RunAsyncLoopLog):
         super(RunWatchLoopLog, self)._loop_process_output(output)
         # self.log.debug("watchclient status %s" % self.watchclient.is_ready())
         if self.watchclient.is_ready():
-            self.log.debug("watchclient %s ready" % self.watchclient)
+            self.log.debug("watchclient %s ready", self.watchclient)
             self.stop_tasks()
             raise RunLoopException(RUNRUN_WATCH_EXITCODE, self._process_output)
 
@@ -103,7 +103,7 @@ class VscKazooClient(KazooClient):
         if name:
             data.append(name)
         res = ':'.join(data)
-        self.log.debug("get_whoami: %s" % res)
+        self.log.debug("get_whoami: %s", res)
         return res
 
     def member_of_party(self, dest, party):
@@ -139,13 +139,13 @@ class VscKazooClient(KazooClient):
                     self.log.raiseException('path %s not subpath of %s ' % (znode, base_znode_string))
         else:
             self.log.raiseException('Unsupported znode type %s (znode %s)' % (znode, type(znode)))
-        self.log.debug("znode %s" % znode)
+        self.log.debug("znode %s", znode)
         return znode
 
     def make_znode(self, znode=None, value="", acl=None, **kwargs):
         """Make a znode, raise NodeExistsError if exists"""
         znode_path = self.znode_path(znode)
-        self.log.debug("creating znode path: %s" % znode_path)
+        self.log.debug("creating znode path: %s", znode_path)
         try:
             znode = self.create(znode_path, value=value.encode(), acl=acl, **kwargs)
         except NodeExistsError:
@@ -153,7 +153,7 @@ class VscKazooClient(KazooClient):
         except NoNodeError:
             self.log.raiseException('parent node(s) of znode %s missing' % znode_path)
 
-        self.log.debug("znode %s created in zookeeper" % znode)
+        self.log.debug("znode %s created in zookeeper", znode)
         return znode
 
     def exists_znode(self, znode=None):
@@ -180,7 +180,7 @@ class VscKazooClient(KazooClient):
         except NoNodeError:
             self.log.raiseException('node %s doesn\'t exists' % znode_path)
 
-        self.log.debug("added ACL for znode %s in zookeeper" % znode_path)
+        self.log.debug("added ACL for znode %s in zookeeper", znode_path)
 
     def set_watch_value(self, watch, value):
         """Sets the value of an existing watch"""
@@ -191,7 +191,7 @@ class VscKazooClient(KazooClient):
         """ Start a watch other clients can register to """
         watchpath = '%s/%s' % (self.watchpath, watch)
         if self.exists(watchpath):
-            self.log.error('watchnode %s already exists!' % watchpath)
+            self.log.error('watchnode %s already exists!', watchpath)
             return False
         return self.make_znode(watchpath, value, makepath=True)
 
@@ -232,7 +232,7 @@ class VscKazooClient(KazooClient):
         # pylint: disable=unused-variable,unused-argument
         def ready_watcher(data, stat):
             data = data.decode()
-            self.log.debug("Watch status is %s" % data)
+            self.log.debug("Watch status is %s", data)
             if data == 'stop':
                 self.log.debug('End node received, set ready')
                 self.set_ready()

@@ -98,7 +98,7 @@ class RsyncController(VscKazooClient):
             if not self.exists_znode(destpath):
                 self.make_znode(destpath, ephemeral=True)
             current_state, _ = self.get_znode(destpath)
-            self.log.debug('Current state is %s, requested state is %s' % (current_state, state))
+            self.log.debug('Current state is %s, requested state is %s', current_state, state)
             if state == self.STATE_PAUSED:
                 self.set_paused(destpath, current_state)
                 return None
@@ -108,6 +108,6 @@ class RsyncController(VscKazooClient):
             elif state == self.STATUS:
                 return self.handle_dest_state(dest, destpath, current_state)
             else:
-                self.log.error('No valid state: %s ' % state)
+                self.log.error('No valid state: %s ', state)
                 return None
 

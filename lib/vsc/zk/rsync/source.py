@@ -61,7 +61,7 @@ class RsyncSource(RsyncController):
     CHECK_WAIT = 20  # wait for path to be available
     RSYNC_STATS = ['Number_of_files', 'Number_of_regular_files_transferred', 'Total_file_size',
                    'Total_transferred_file_size', 'Literal_data', 'Matched_data', 'File_list_size',
-                   'Total_bytes_sent', 'Total_bytes_received'];
+                   'Total_bytes_sent', 'Total_bytes_received']
 
 
     def __init__(self, hosts, session=None, name=None, default_acl=None,
@@ -94,7 +94,7 @@ class RsyncSource(RsyncController):
         self.init_stats()
 
         if rsyncdepth < 0:
-            self.log.raiseException('Invalid rsync depth: %i' % rsyncdepth)
+            self.log.raiseException('Invalid rsync depth: %i', rsyncdepth)
         else:
             self.rsyncdepth = rsyncdepth
         self.rsync_arbitopts = arbitopts
@@ -112,14 +112,14 @@ class RsyncSource(RsyncController):
 
     def init_stats(self):
         self.ensure_path(self.znode_path(self.stats_path))
-        self.counters = {};
+        self.counters = {}
         for stat in self.RSYNC_STATS:
             self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)))
 
     def output_stats(self):
         self.stats = dict([(k, v.value) for k, v in self.counters.items()])
         jstring = json.dumps(self.stats)
-        self.log.info('progress stats: %s' % jstring)
+        self.log.info('progress stats: %s', jstring)
         return jstring
 
     def get_sources(self):
@@ -174,8 +174,8 @@ class RsyncSource(RsyncController):
         return len(self.path_queue) == 0
 
     def output_progress(self, todo):
-        self.log.info('Progress: %s of %s paths remaining, %s failed'
-            % (todo, self.paths_total, len(self.failed_queue)))
+        self.log.info('Progress: %s of %s paths remaining, %s failed',
+            todo, self.paths_total, len(self.failed_queue))
         self.output_stats()
 
     def output_clients(self, total, sources):
@@ -197,7 +197,7 @@ class RsyncSource(RsyncController):
             if total_clients != tot_clients_new or total_sources != src_clients_new:
                 total_clients = tot_clients_new
                 total_sources = src_clients_new
-                self.output_clients(total_clients, total_sources);
+                self.output_clients(total_clients, total_sources)
             time.sleep(self.WAITTIME)
 
     def len_paths(self):
@@ -220,7 +220,7 @@ class RsyncSource(RsyncController):
         remain = self.len_paths()
         if remain > 0:
             code = 0
-            self.log.info('Remaining: %s, Failed: %s' % (remain, len(self.failed_queue)))
+            self.log.info('Remaining: %s, Failed: %s', remain, len(self.failed_queue))
         else:
             code = ZKRS_NO_SUCH_SESSION_EXIT_CODE
             self.log.info('No active session')
@@ -242,7 +242,7 @@ class RsyncSource(RsyncController):
             'completed' : len(self.completed_queue)
         }
         while (len(self.path_queue) > 0):
-            self.log.warning('Unfinished Path %s' % self.path_queue.get().decode())
+            self.log.warning('Unfinished Path %s', self.path_queue.get().decode())
             self.path_queue.consume()
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.path_queue.path, recursive=True)
@@ -251,11 +251,11 @@ class RsyncSource(RsyncController):
         self.delete(self.znode_path(self.stats_path), recursive=True)
 
         while (len(self.failed_queue) > 0):
-            self.log.error('Failed Path %s' % self.failed_queue.get().decode())
+            self.log.error('Failed Path %s', self.failed_queue.get().decode())
             self.failed_queue.consume()
 
         while (len(self.completed_queue) > 0):
-            self.log.info('Completed Path %s' % self.completed_queue.get().decode())
+            self.log.info('Completed Path %s', self.completed_queue.get().decode())
             self.completed_queue.consume()
 
         self.log.info('Output:')
@@ -280,7 +280,7 @@ class RsyncSource(RsyncController):
         for use by --files-from.
         """
         if not path.startswith(self.rsyncpath):
-            self.log.raiseException('Invalid path! %s is not a subpath of %s!' % (path, self.rsyncpath))
+            self.log.raiseException('Invalid path! %s is not a subpath of %s!', path, self.rsyncpath)
             return None
         else:
             subpath = path[len(self.rsyncpath):]
@@ -315,7 +315,7 @@ class RsyncSource(RsyncController):
             attempt += 1
             time.sleep(self.WAITTIME)  # Wait before new attempt
 
-        self.log.error('There were issues with path %s!' % path)
+        self.log.error('There were issues with path %s!', path)
         self.failed_queue.put(path.encode())
         return 0, output  # otherwise client get stuck
 
@@ -326,7 +326,7 @@ class RsyncSource(RsyncController):
 
         if self.rsync_verbose:
             outp = output.split("%s%s" % (os.linesep, os.linesep))
-            self.log.info('Verbose file list output is: %s' % outp[0])
+            self.log.info('Verbose file list output is: %s', outp[0])
             del outp[0]
             output = os.linesep.join(outp)
 
@@ -334,13 +334,13 @@ class RsyncSource(RsyncController):
         for line in lines:
             keyval = line.split(':')
             if len(keyval) < 2 or keyval[1] == ' ':
-                self.log.debug('output line not parsed: %s' % line)
+                self.log.debug('output line not parsed: %s', line)
                 continue
             key = re.sub(' ', '_', keyval[0])
             val = keyval[1].split()[0]
             val = re.sub(',', '', val)
             if key not in self.RSYNC_STATS:
-                self.log.debug('output metric not recognised: %s' % key)
+                self.log.debug('output metric not recognised: %s', key)
                 continue
             self.counters[key] += int(val)
 
@@ -374,7 +374,7 @@ class RsyncSource(RsyncController):
             for arbopt in self.rsync_arbitopts:
                 opt = "--%s" % re.sub(':', '=', arbopt, 1)
                 arbopts.append(opt)
-            self.log.warning('Adding unchecked flags %s' % ' '.join(arbopts))
+            self.log.warning('Adding unchecked flags %s', ' '.join(arbopts))
             flags.extend(arbopts)
         return flags
 
@@ -387,8 +387,8 @@ class RsyncSource(RsyncController):
         gfile = self.generate_file(path)
         flags = self.get_flags(gfile, recursive)
 
-        self.log.info('%s is sending path %s to %s %s' % (self.whoami, path, host, port))
-        self.log.debug('Used flags: "%s"' % ' '.join(flags))
+        self.log.info('%s is sending path %s to %s %s', self.whoami, path, host, port)
+        self.log.debug('Used flags: "%s"', ' '.join(flags))
         command = 'rsync %s %s/ rsync://%s:%s/%s' % (' '.join(flags), self.rsyncpath,
                                                      host, port, self.module)
         code, output = RunAsyncLoopLog.run(command)
@@ -425,12 +425,12 @@ class RsyncSource(RsyncController):
         while (attempt <= attempts):
             dest = self.try_a_dest(self.TIME_OUT)  # Keeps it if not consuming
             if dest:  # We locked a rsync daemon
-                self.log.debug('Got destination %s' % dest)
+                self.log.debug('Got destination %s', dest)
                 return dest
             attempt += 1
             time.sleep(self.WAITTIME)
 
-        self.log.warning('Still no destination after %s tries' % attempts)
+        self.log.warning('Still no destination after %s tries', attempts)
         return None
 
     def dest_is_sane(self, dest):
@@ -445,12 +445,12 @@ class RsyncSource(RsyncController):
         if current_state == self.STATE_PAUSED:
             self.set_znode(destpath, self.STATE_DISABLED)
             self.dest_queue.consume()
-            self.log.debug('Destination %s was disabled and removed from queue' % dest)
+            self.log.debug('Destination %s was disabled and removed from queue', dest)
             return False
         elif current_state == self.STATE_ACTIVE:
             return True
         else:
-            self.log.error('Destination %s is in an unknown state %s' % (dest, current_state))
+            self.log.error('Destination %s is in an unknown state %s', dest, current_state)
             return False
 
     def try_a_dest(self, timeout):
