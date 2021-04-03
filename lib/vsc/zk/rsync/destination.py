@@ -116,7 +116,7 @@ class RsyncDestination(RsyncController):
         if name:
             data.append(name)
         res = ':'.join(data)
-        self.log.debug("get_whoami: %s" % res)
+        self.log.debug("get_whoami: %s", res)
         return res
 
     def get_destss(self):
@@ -149,7 +149,7 @@ class RsyncDestination(RsyncController):
                 port = self.daemon_port
                 portpath = '%s/%s' % (portdir, port)
                 if self.exists_znode(portpath):
-                    self.log.raiseException('Port already in use: %s' % port)
+                    self.log.raiseException('Port already in use: %s', port)
 
             else:
                 port = self.start_port
@@ -170,24 +170,24 @@ class RsyncDestination(RsyncController):
         """ Set the destination state to paused """
         if old_state == self.STATE_ACTIVE:
             self.set_znode(destpath, self.STATE_PAUSED)
-            self.log.info('Destination %s was paused' % self.whoami)
+            self.log.info('Destination %s was paused', self.whoami)
         elif not old_state:
-            self.log.info('Destination %s not yet activated' % self.whoami)
+            self.log.info('Destination %s not yet activated', self.whoami)
         else:
-            self.log.warning('Wanted to pause destination %s, but old state was %s' % (self.whoami, old_state))
+            self.log.warning('Wanted to pause destination %s, but old state was %s', self.whoami, old_state)
 
     def set_active(self, destpath, old_state):
         """ Set the destination state to active, requeue when needed """
 
         if not old_state or old_state == self.STATE_PAUSED:
             self.set_znode(destpath, self.STATE_ACTIVE)
-            self.log.info('Destination %s was activated' % self.whoami)
+            self.log.info('Destination %s was activated', self.whoami)
         elif old_state == self.STATE_DISABLED:
             self.set_znode(destpath, self.STATE_ACTIVE)
             self.add_to_queue()
-            self.log.info('Destination %s was activated' % self.whoami)
+            self.log.info('Destination %s was activated', self.whoami)
         else:
-            self.log.warning('Wanted to activate destination %s, but old state was %s' % (self.whoami, old_state))
+            self.log.warning('Wanted to activate destination %s, but old state was %s', self.whoami, old_state)
 
     def activate(self):
         self.dest_state(self.whoami, self.STATE_ACTIVE)
@@ -230,7 +230,7 @@ class RsyncDestination(RsyncController):
         """Add this destination to the destination queue """
         destid = '%d:%s' % (self.port, self.whoami)
         self.dest_queue.put(destid.encode())
-        self.log.info('Added destination %s to queue with port %s' % (self.whoami, self.port))
+        self.log.info('Added destination %s to queue with port %s', self.whoami, self.port)
 
     def run_with_watch_and_queue(self, command):
         """ Runs a command that stops when watchclient is ready, also

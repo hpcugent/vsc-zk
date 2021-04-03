@@ -75,7 +75,7 @@ def init_logging(logfile, session, rstype):
         os.chmod(logdir, stat.S_IRWXU)
 
     fancylogger.logToFile(logfile)
-    logger.info('Logging to file %s:' % logfile)
+    logger.info('Logging to file %s:', logfile)
 
 def init_pidfile(pidfile, session, rstype):
     """ Prepare pidfile """
@@ -118,8 +118,8 @@ def do_pathsonly(options, kwargs):
         endtime = time.time()
         timing = endtime - starttime
         pathqueue = rsyncP.path_queue
-        logger.info('Building with depth %i took %f seconds walltime. there are %i paths in the Queue'
-                     % (options.depth, timing, len(pathqueue)))
+        logger.info('Building with depth %i took %f seconds walltime. there are %i paths in the Queue',
+                    options.depth, timing, len(pathqueue))
         rsyncP.delete(pathqueue.path, recursive=True)
         rsyncP.release_lock()
     else:
@@ -136,7 +136,7 @@ def start_destination(options, kwargs):
     rsyncD = RsyncDestination(options.servers, **kwargs)
     rsyncD.run()
 
-    logger.debug('%s Ready' % rsyncD.get_whoami())
+    logger.debug('%s Ready', rsyncD.get_whoami())
     rsyncD.exit()
     sys.exit(0)
 
@@ -176,7 +176,7 @@ def start_source(options, kwargs):
             logger.debug('trying to get a path out of Queue')
             rsyncS.rsync(TIME_OUT)
 
-        logger.debug('%s Ready' % rsyncS.get_whoami())
+        logger.debug('%s Ready', rsyncS.get_whoami())
 
     rsyncS.exit()
     sys.exit(0)

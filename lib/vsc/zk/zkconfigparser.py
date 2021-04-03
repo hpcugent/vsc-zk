@@ -94,5 +94,5 @@ def parse_acls(acls, users, root_acl):
                 tacl = make_digest_acl(acl_user, str(users[acl_user].get('passwd')), \
                     read=acl_r, write=acl_w, create=acl_c, delete=acl_d, admin=acl_a)
                 acl_list.append(tacl)
-    logger.debug("acl list %s" % acl_list)
+    logger.debug("acl list %s", acl_list)
     return acl_list

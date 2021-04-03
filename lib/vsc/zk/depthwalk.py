@@ -80,16 +80,16 @@ def build_paths(path, depth, exclude_re=None, exclude_usr=None):
     pathdepth = path.count(os.path.sep)
     for root, dirs, _ in depthwalk(path, depth):
         if exclude_path(root, exclude_re, ex_uid):
-            logger.info('excluding path %s' % root)
+            logger.info('excluding path %s', root)
             del dirs[:]
             continue
         for name in dirs:
             subpath = os.path.join(root, name)
             if os.path.islink(subpath):  # Don't return symlinks to directories
-                logger.info('directory symlink not added %s' % subpath)
+                logger.info('directory symlink not added %s', subpath)
                 continue
             if exclude_path(subpath, exclude_re, ex_uid):
-                logger.info('excluding path %s' % subpath)
+                logger.info('excluding path %s', subpath)
                 continue
 
             subpathdepth = subpath.count(os.path.sep)
@@ -99,8 +99,8 @@ def build_paths(path, depth, exclude_re=None, exclude_usr=None):
                 recursive = 0
             pathlist.append((subpath, recursive))
 
-    logger.debug("pathlist for %s is %s" % (path, pathlist))
-    logger.info('pathlist of path %s contains %d entries' % (path, len(pathlist)))
+    logger.debug("pathlist for %s is %s", path, pathlist)
+    logger.info('pathlist of path %s contains %d entries', path, len(pathlist))
 
     return pathlist
 
@@ -141,14 +141,14 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=None)
 
         pathlist = pathdict.items()
 
-    logger.debug("pathlist is %s" % pathlist)
+    logger.debug("pathlist is %s", pathlist)
     return pathlist
 
 def encode_paths(pathlist):
     enclist = []
     for (path, rec) in pathlist:
         enclist.append("%i_%s" % (rec, path))
-    logger.debug("encoded list is %s" % enclist)
+    logger.debug("encoded list is %s", enclist)
     return enclist
 
 def decode_path(encpath):
