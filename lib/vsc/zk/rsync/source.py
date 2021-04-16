@@ -165,9 +165,27 @@ class RsyncSource(RsyncController):
             paths = encode_paths(tuplpaths)
         self.paths_total = len(paths)
         for path in paths:
-            self.path_queue.put(path.encode())  # Put_all can issue a zookeeper connection error with big lists
+            self.path_queue.put(self.encoded_path(path)) # Put_all can issue a zookeeper connection error with big lists
         self.log.info('pathqueue building finished')
         return self.paths_total
+
+    def encoded_path(self, path):
+        """ Encode a path """
+        try:
+            epath = path.encode()
+        except UnicodeEncodeError:
+            self.log.warning("Invalid characters in %s, doing surrogateescape", path)
+            epath = path.encode('utf-8', "surrogateescape")
+        return epath
+
+    def decoded_path(self, path):
+        """ Decode a path """
+        try:
+            dpath = path.decode()
+        except UnicodeDecodeError:
+            self.log.warning("Invalid characters in %s, doing surrogateescape", path)
+            dpath = path.decode('utf-8', "surrogateescape")
+        return dpath
 
     def isempty_pathqueue(self):
         """ Returns true if all paths in pathqueue are done """
@@ -242,7 +260,7 @@ class RsyncSource(RsyncController):
             'completed' : len(self.completed_queue)
         }
         while (len(self.path_queue) > 0):
-            self.log.warning('Unfinished Path %s', self.path_queue.get().decode())
+            self.log.warning('Unfinished Path %s', self.decoded_path(self.path_queue.get()))
             self.path_queue.consume()
         self.delete(self.dest_queue.path, recursive=True)
         self.delete(self.path_queue.path, recursive=True)
@@ -251,11 +269,11 @@ class RsyncSource(RsyncController):
         self.delete(self.znode_path(self.stats_path), recursive=True)
 
         while (len(self.failed_queue) > 0):
-            self.log.error('Failed Path %s', self.failed_queue.get().decode())
+            self.log.error('Failed Path %s', self.decoded_path(self.failed_queue.get()))
             self.failed_queue.consume()
 
         while (len(self.completed_queue) > 0):
-            self.log.info('Completed Path %s', self.completed_queue.get().decode())
+            self.log.info('Completed Path %s', self.decoded_path(self.completed_queue.get()))
             self.completed_queue.consume()
 
         self.log.info('Output:')
@@ -299,7 +317,7 @@ class RsyncSource(RsyncController):
 
             dest = self.get_a_dest(attempts)  # Keeps it if not consuming
             if not dest or not self.basepath_ok():
-                self.path_queue.put(path.encode(), priority=50)  # Keep path in queue
+                self.path_queue.put(self.encoded_path(path), priority=50)  # Keep path in queue
                 self.path_queue.consume()  # But stop locking it
                 time.sleep(self.TIME_OUT)  # Wait before new attempt
                 return 1, None
@@ -310,13 +328,13 @@ class RsyncSource(RsyncController):
             else:
                 code, output = self.run_rsync(path, host, port)
             if code == 0:
-                self.completed_queue.put(path.encode())
+                self.completed_queue.put(self.encoded_path(path))
                 return code, output
             attempt += 1
             time.sleep(self.WAITTIME)  # Wait before new attempt
 
         self.log.error('There were issues with path %s!', path)
-        self.failed_queue.put(path.encode())
+        self.failed_queue.put(self.encoded_path(path))
         return 0, output  # otherwise client get stuck
 
     def parse_output(self, output):
@@ -460,7 +478,7 @@ class RsyncSource(RsyncController):
         """
         if len(self.dest_queue) == 0:
             self.log.debug('Destinations not yet available')
-        dest = self.dest_queue.get(timeout).decode()
+        dest = self.decoded_path(self.dest_queue.get(timeout))
         if dest:
             port, whoami = tuple(dest.split(':', 1))
             if not self.member_of_party(whoami, 'allsd'):
@@ -486,7 +504,7 @@ class RsyncSource(RsyncController):
                 self.log.warning('Basepath not available, waiting')
                 time.sleep(self.CHECK_WAIT)
                 return None
-        path = self.path_queue.get(timeout).decode()
+        path = self.decoded_path(self.path_queue.get(timeout))
         if path:
             if self.rsync_path(path):
                 self.path_queue.consume()
