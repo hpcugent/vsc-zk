@@ -478,7 +478,7 @@ class RsyncSource(RsyncController):
         """
         if len(self.dest_queue) == 0:
             self.log.debug('Destinations not yet available')
-        dest = self.decoded_path(self.dest_queue.get(timeout))
+        dest = self.dest_queue.get(timeout).decode()
         if dest:
             port, whoami = tuple(dest.split(':', 1))
             if not self.member_of_party(whoami, 'allsd'):
