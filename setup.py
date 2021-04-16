@@ -34,7 +34,7 @@ import vsc.install.shared_setup as shared_setup
 from vsc.install.shared_setup import kw, sdw
 
 PACKAGE = {
-    'version': '2.0.2',
+    'version': '2.0.4',
     'author': [sdw, kw],
     'maintainer': [sdw, kw],
     'install_requires': [
