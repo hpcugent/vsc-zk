@@ -411,8 +411,8 @@ class RsyncSource(RsyncController):
                                                      host, port, self.module)
         code, output = RunAsyncLoopLog.run(command)
         os.remove(gfile)
-        parsed = self.parse_output(output)
-        return code, parsed
+        self.parse_output(output)
+        return code, None
 
     def run_netcat(self, path, host, port):
         """ Test run with netcat """
