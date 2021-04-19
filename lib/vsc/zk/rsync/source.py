@@ -32,6 +32,7 @@ zk.rsync source
 """
 
 import json
+import io
 import os
 import re
 import tempfile
@@ -180,6 +181,8 @@ class RsyncSource(RsyncController):
 
     def decoded_path(self, path):
         """ Decode a path """
+        if path is None:
+            return None
         try:
             dpath = path.decode()
         except UnicodeDecodeError:
@@ -302,11 +305,20 @@ class RsyncSource(RsyncController):
             return None
         else:
             subpath = path[len(self.rsyncpath):]
-            subpath = subpath.strip(os.path.sep)
-
-            fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
-            wfile = os.fdopen(fd, "w")
-            wfile.write('%s/' % subpath)
+            subpath = '%s/' % subpath.strip(os.path.sep)
+            try:
+                fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
+                with io.open(fd, 'w') as wfile:
+                    wfile.write(subpath)
+            except UnicodeEncodeError:
+                # We should write the path with surrogateescape encoding. This works because we got the decoded
+                # path from os.walk, which uses this by default so the os.walk does not fail:
+                # >>> sys.getfilesystemencodeerrors() -> 'surrogateescape'
+                # https://docs.python.org/3/library/os.html#file-names-command-line-arguments-and-environment-variables
+                self.log.warning("Invalid characters in %s, doing surrogateescape", path)
+                fd, name = tempfile.mkstemp(dir=self.RSDIR)
+                with io.open(fd, 'wb') as wfile:
+                    wfile.write(subpath.encode('utf-8', "surrogateescape"))
             return name
 
     def attempt_run(self, path, attempts=3):
@@ -478,7 +490,9 @@ class RsyncSource(RsyncController):
         """
         if len(self.dest_queue) == 0:
             self.log.debug('Destinations not yet available')
-        dest = self.dest_queue.get(timeout).decode()
+        dest = self.dest_queue.get(timeout)
+        if dest is not None:
+            dest = dest.decode()
         if dest:
             port, whoami = tuple(dest.split(':', 1))
             if not self.member_of_party(whoami, 'allsd'):
