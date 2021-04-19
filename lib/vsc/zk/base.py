@@ -168,6 +168,8 @@ class VscKazooClient(KazooClient):
     def get_znode(self, znode=None):
         znode_path = self.znode_path(znode)
         data, stat = self.get(znode_path)
+        if data is None:
+            return None, stat
         return data.decode(), stat
 
     def znode_acls(self, znode=None, acl=None):
