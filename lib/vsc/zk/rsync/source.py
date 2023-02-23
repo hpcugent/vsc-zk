@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2021 Ghent University
+# Copyright 2013-2023 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -42,7 +42,6 @@ from vsc.utils.cache import FileCache
 from kazoo.recipe.counter import Counter
 from kazoo.recipe.queue import LockingQueue
 from vsc.utils.run import RunAsyncLoopLog
-from vsc.utils.py2vs3 import is_string
 from vsc.zk.base import ZKRS_NO_SUCH_SESSION_EXIT_CODE
 from vsc.zk.depthwalk import get_pathlist, encode_paths, decode_path
 from vsc.zk.rsync.controller import RsyncController
@@ -439,7 +438,7 @@ class RsyncSource(RsyncController):
         if not path:
             self.log.raiseException('Empty path given!')
             return None
-        elif not is_string(path):
+        elif not isinstance(path, str):
             self.log.raiseException('Invalid path: %s !' % path)
             return None
         else:

@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2021 Ghent University
+# Copyright 2013-2023 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -39,7 +39,6 @@ from kazoo.exceptions import NodeExistsError, NoNodeError, NoAuthError
 from kazoo.recipe.party import Party
 from vsc.utils import fancylogger
 from vsc.utils.run import RunAsyncLoopLog, RunLoopException
-from vsc.utils.py2vs3 import is_string
 
 RUNRUN_WATCH_EXITCODE = 101
 ZKRS_NO_SUCH_SESSION_EXIT_CODE = 14
@@ -131,7 +130,7 @@ class VscKazooClient(KazooClient):
         elif isinstance(znode, (tuple, list)):
             znode = '/'.join(znode)
 
-        if is_string(znode):
+        if isinstance(znode, str):
             if not znode.startswith(base_znode_string):
                 if not znode.startswith('/'):
                     znode = '%s/%s' % (self.BASE_ZNODE, znode)
