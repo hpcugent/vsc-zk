@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 #
-# Copyright 2013-2021 Ghent University
+# Copyright 2013-2023 Ghent University
 #
 # This file is part of vsc-zk,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -34,10 +34,10 @@ zk.rsync destination
 import os
 import socket
 import tempfile
+import configparser
 
 from vsc.zk.base import RunWatchLoopLog
 from vsc.zk.rsync.controller import RsyncController
-from vsc.utils.py2vs3 import configparser
 
 class RunDestination(RunWatchLoopLog):
     """When zookeeperclient is ready, stop"""
