@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: latin-1 -*-
 #
 # Copyright 2013-2023 Ghent University
 #
@@ -239,7 +238,7 @@ def main():
         # Pathbuilding (Source clients and pathsonly ) specific options:
         'rsubpaths'   : ('rsync subpaths, specified as <depth>_<path>, with deepest paths last',
                             'strlist', 'store', None),
-        'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile('/\.snapshots(/.*|$)')),
+        'excludere'   : ('Exclude from pathbuilding', None, 'regex', re.compile(r'/\.snapshots(/.*|$)')),
         'excl_usr'    : ('If set, exclude paths for this user only when using excludere', None, 'store', 'root'),
         'depth'       : ('queue depth', "int", 'store', 3),
         # Source clients options; should be the same on all clients of the session!:

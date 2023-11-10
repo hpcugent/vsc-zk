@@ -28,7 +28,7 @@ Mocking module for Kazoo/Zookeeper classes
 
 @author: Kenneth Waegeman (Ghent University)
 """
-class KazooClient(object):
+class KazooClient:
 
     BASE_ZNODE = '/admin'
 
@@ -44,10 +44,10 @@ class KazooClient(object):
         pass
 
     def set(self, obj, value):
-        self.objs[obj] = value;
+        self.objs[obj] = value
 
     def setstr(self, obj, value):
-        self.set(obj, value.encode());
+        self.set(obj, value.encode())
 
     def create(self, obj, value, **kw):
         return self.set(obj, value)
@@ -61,14 +61,13 @@ class KazooClient(object):
     def exists(self, obj):
         return obj in self.objs
 
-    def Lock(self, path, id):
+    def Lock(self, path, idx):
         return Lock(self)
-        pass
 
     def print_objs(self):
         print(self.objs)
 
-class Lock(object):
+class Lock:
     def __init__(self, dummy1):
         pass
     def __exit__(self, bl, er, erb):
@@ -76,14 +75,14 @@ class Lock(object):
     def __enter__(self):
         pass
 
-class Party(object):
+class Party:
     def __init__(self, dummy1, dummy2, dummy3, **kwargs):
         pass
 
     def join(self):
         pass
 
-class LockingQueue(object):
+class LockingQueue:
     def __init__(self, thingy, name, **kwargs):
         pass
     def put(self, something):
@@ -93,7 +92,7 @@ class LockingQueue(object):
     def __len__(self):
         return 0
 
-class Counter(object):
+class Counter:
     def __init__(self, client, path, default=0):
 
         self.default = default

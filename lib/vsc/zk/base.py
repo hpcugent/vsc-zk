@@ -1,4 +1,3 @@
-# -*- coding: latin-1 -*-
 #
 # Copyright 2013-2023 Ghent University
 #
@@ -48,7 +47,7 @@ class RunWatchLoopLog(RunAsyncLoopLog):
     def __init__(self, cmd, **kwargs):
 
         self.watchclient = kwargs.pop('watchclient', None)
-        super(RunWatchLoopLog, self).__init__(cmd, **kwargs)
+        super().__init__(cmd, **kwargs)
         self.log.debug("watchclient %s registered", self.watchclient)
 
 
@@ -57,7 +56,7 @@ class RunWatchLoopLog(RunAsyncLoopLog):
         send it to the logger. The logger need to be stream-like
         When watch is ready, stop
         """
-        super(RunWatchLoopLog, self)._loop_process_output(output)
+        super()._loop_process_output(output)
         # self.log.debug("watchclient status %s" % self.watchclient.is_ready())
         if self.watchclient.is_ready():
             self.log.debug("watchclient %s ready", self.watchclient)
@@ -87,7 +86,7 @@ class VscKazooClient(KazooClient):
             'auth_data'   : auth_data,
           #  'logger'      : self.log
         }
-        super(VscKazooClient, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.start()
         self.log.debug('Zookeeper client started')
 
@@ -117,7 +116,7 @@ class VscKazooClient(KazooClient):
             self.log.debug("Joining %s parties: %s", len(parties), ", ".join(parties))
             for party in parties:
 
-                partypath = '%s/%s/parties/%s' % (self.BASE_ZNODE, self.session, party)
+                partypath = f'{self.BASE_ZNODE}/{self.session}/parties/{party}'
                 thisparty = Party(self, partypath, self.whoami)
                 thisparty.join()
                 self.parties[party] = thisparty
@@ -133,11 +132,11 @@ class VscKazooClient(KazooClient):
         if isinstance(znode, str):
             if not znode.startswith(base_znode_string):
                 if not znode.startswith('/'):
-                    znode = '%s/%s' % (self.BASE_ZNODE, znode)
+                    znode = f'{self.BASE_ZNODE}/{znode}'
                 else:
-                    self.log.raiseException('path %s not subpath of %s ' % (znode, base_znode_string))
+                    self.log.raiseException(f'path {znode} not subpath of {base_znode_string} ')
         else:
-            self.log.raiseException('Unsupported znode type %s (znode %s)' % (znode, type(znode)))
+            self.log.raiseException(f'Unsupported znode type {znode} (znode {type(znode)})')
         self.log.debug("znode %s", znode)
         return znode
 
@@ -148,9 +147,9 @@ class VscKazooClient(KazooClient):
         try:
             znode = self.create(znode_path, value=value.encode(), acl=acl, **kwargs)
         except NodeExistsError:
-            self.log.raiseException('znode %s already exists' % znode_path)
+            self.log.raiseException(f'znode {znode_path} already exists')
         except NoNodeError:
-            self.log.raiseException('parent node(s) of znode %s missing' % znode_path)
+            self.log.raiseException(f'parent node(s) of znode {znode_path} missing')
 
         self.log.debug("znode %s created in zookeeper", znode)
         return znode
@@ -177,20 +176,20 @@ class VscKazooClient(KazooClient):
         try:
             self.set_acls(znode_path, acl)
         except NoAuthError:
-            self.log.raiseException('No valid authentication for (%s) on path %s!' % (self.auth_data, znode_path))
+            self.log.raiseException(f'No valid authentication for ({self.auth_data}) on path {znode_path}!')
         except NoNodeError:
-            self.log.raiseException('node %s doesn\'t exists' % znode_path)
+            self.log.raiseException(f'node {znode_path} doesn\'t exists')
 
         self.log.debug("added ACL for znode %s in zookeeper", znode_path)
 
     def set_watch_value(self, watch, value):
         """Sets the value of an existing watch"""
-        watchpath = '%s/%s' % (self.watchpath, watch)
+        watchpath = f'{self.watchpath}/{watch}'
         self.set(watchpath, value.encode())
 
     def new_watch(self, watch, value):
         """ Start a watch other clients can register to """
-        watchpath = '%s/%s' % (self.watchpath, watch)
+        watchpath = f'{self.watchpath}/{watch}'
         if self.exists(watchpath):
             self.log.error('watchnode %s already exists!', watchpath)
             return False
@@ -198,7 +197,7 @@ class VscKazooClient(KazooClient):
 
     def remove_watch(self, watch):
         """ Removes a wath """
-        watchpath = '%s/%s' % (self.watchpath, watch)
+        watchpath = f'{self.watchpath}/{watch}'
         self.delete(watchpath)
 
     def set_ready(self):
@@ -228,7 +227,7 @@ class VscKazooClient(KazooClient):
 
     def ready_with_stop_watch(self):
         """Register to watch and set to ready when watch is set to 'stop' """
-        watchpath = '%s/%s' % (self.watchpath, 'ready')
+        watchpath = f'{self.watchpath}/ready'
         @self.DataWatch(watchpath)
         # pylint: disable=unused-variable,unused-argument
         def ready_watcher(data, stat):

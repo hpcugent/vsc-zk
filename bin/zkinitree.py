@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: latin-1 -*-
 #
 # Copyright 2013-2023 Ghent University
 #
@@ -64,9 +63,9 @@ def main():
     # Iterate paths
     for path, attrs in znodes.iteritems():
         logger.debug("path %s attribs %s", path, attrs)
-        acls = dict((arg, attrs[arg]) for arg in attrs if arg not in ('value', 'ephemeral', 'sequence', 'makepath'))
+        acls = {arg: attrs[arg] for arg in attrs if arg not in ('value', 'ephemeral', 'sequence', 'makepath')}
         acl_list = parse_acls(acls, users, root_acl)
-        kwargs = dict((arg, attrs[arg]) for arg in attrs if arg in ('ephemeral', 'sequence', 'makepath'))
+        kwargs = {arg: attrs[arg] for arg in attrs if arg in ('ephemeral', 'sequence', 'makepath')}
         if not zkclient.exists_znode(path):
             zkclient.make_znode(path, value=attrs.get('value', ''), acl=acl_list, **kwargs)
         else:

@@ -1,4 +1,3 @@
-# -*- coding: latin-1 -*-
 #
 # Copyright 2013-2023 Ghent University
 #
@@ -125,9 +124,9 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=None)
             subdepth, subpath = encsubpath.split('_', 1)
             subpath = subpath.rstrip(os.path.sep)
             if not subpath.startswith(path):
-                subpath = '%s/%s' % (path, subpath)
+                subpath = f'{path}/{subpath}'
             if subpath not in pathdict:
-                logger.raiseException('%s is not in the pathlist of %s with depth %d!' % (subpath, path, depth))
+                logger.raiseException(f'{subpath} is not in the pathlist of {path} with depth {int(depth)}!')
 
             subpathdepth = subpath.count(os.path.sep)
             newdepth = subpathdepth + int(subdepth)
@@ -147,7 +146,7 @@ def get_pathlist(path, depth, exclude_re=None, exclude_usr=None, rsubpaths=None)
 def encode_paths(pathlist):
     enclist = []
     for (path, rec) in pathlist:
-        enclist.append("%i_%s" % (rec, path))
+        enclist.append(f"{int(rec)}_{path}")
     logger.debug("encoded list is %s", enclist)
     return enclist
 
