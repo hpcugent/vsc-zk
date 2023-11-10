@@ -1,4 +1,3 @@
-# -*- coding: latin-1 -*-
 #
 # Copyright 2013-2023 Ghent University
 #
@@ -32,7 +31,6 @@ zk.rsync source
 """
 
 import json
-import io
 import os
 import re
 import tempfile
@@ -81,7 +79,7 @@ class RsyncSource(RsyncController):
             'netcat'      : netcat,
             'dropcache'   : dropcache,
         }
-        super(RsyncSource, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.lockpath = self.znode_path(self.session + '/lock')
         self.lock = None
@@ -90,7 +88,7 @@ class RsyncSource(RsyncController):
         self.failed_queue = LockingQueue(self, self.znode_path(self.session + '/failedQueue'))
         self.output_queue = LockingQueue(self, self.znode_path(self.session + '/outputQueue'))
 
-        self.stats_path = '%s/stats' % self.session
+        self.stats_path = f'{self.session}/stats'
         self.init_stats()
 
         if rsyncdepth < 0:
@@ -114,10 +112,10 @@ class RsyncSource(RsyncController):
         self.ensure_path(self.znode_path(self.stats_path))
         self.counters = {}
         for stat in self.RSYNC_STATS:
-            self.counters[stat] = Counter(self, self.znode_path('%s/%s' % (self.stats_path, stat)))
+            self.counters[stat] = Counter(self, self.znode_path(f'{self.stats_path}/{stat}'))
 
     def output_stats(self):
-        self.stats = dict([(k, v.value) for k, v in self.counters.items()])
+        self.stats = {k: v.value for k, v in self.counters.items()}
         jstring = json.dumps(self.stats)
         self.log.info('progress stats: %s', jstring)
         return jstring
@@ -261,7 +259,7 @@ class RsyncSource(RsyncController):
             'failed' : len(self.failed_queue),
             'completed' : len(self.completed_queue)
         }
-        while (len(self.path_queue) > 0):
+        while len(self.path_queue) > 0:
             self.log.warning('Unfinished Path %s', self.decoded_path(self.path_queue.get()))
             self.path_queue.consume()
         self.delete(self.dest_queue.path, recursive=True)
@@ -270,16 +268,16 @@ class RsyncSource(RsyncController):
         self.output_stats()
         self.delete(self.znode_path(self.stats_path), recursive=True)
 
-        while (len(self.failed_queue) > 0):
+        while len(self.failed_queue) > 0:
             self.log.error('Failed Path %s', self.decoded_path(self.failed_queue.get()))
             self.failed_queue.consume()
 
-        while (len(self.completed_queue) > 0):
+        while len(self.completed_queue) > 0:
             self.log.info('Completed Path %s', self.decoded_path(self.completed_queue.get()))
             self.completed_queue.consume()
 
         self.log.info('Output:')
-        while (len(self.output_queue) > 0):
+        while len(self.output_queue) > 0:
             self.log.info(self.output_queue.get().decode())
             self.output_queue.consume()
 
@@ -304,10 +302,10 @@ class RsyncSource(RsyncController):
             return None
         else:
             subpath = path[len(self.rsyncpath):]
-            subpath = '%s/' % subpath.strip(os.path.sep)
+            subpath = f'{subpath.strip(os.path.sep)}/'
             try:
                 fd, name = tempfile.mkstemp(dir=self.RSDIR, text=True)
-                with io.open(fd, 'w') as wfile:
+                with open(fd, 'w', encoding='utf8') as wfile:
                     wfile.write(subpath)
             except UnicodeEncodeError:
                 # We should write the path with surrogateescape encoding. This works because we got the decoded
@@ -316,7 +314,7 @@ class RsyncSource(RsyncController):
                 # https://docs.python.org/3/library/os.html#file-names-command-line-arguments-and-environment-variables
                 self.log.warning("Invalid characters in %s, doing surrogateescape", path)
                 fd, name = tempfile.mkstemp(dir=self.RSDIR)
-                with io.open(fd, 'wb') as wfile:
+                with open(fd, 'wb') as wfile:
                     wfile.write(subpath.encode('utf-8', "surrogateescape"))
             return name
 
@@ -324,7 +322,7 @@ class RsyncSource(RsyncController):
         """ Try to run a command x times, on failure add to failed queue """
 
         attempt = 1
-        while (attempt <= attempts):
+        while attempt <= attempts:
 
             dest = self.get_a_dest(attempts)  # Keeps it if not consuming
             if not dest or not self.basepath_ok():
@@ -354,7 +352,7 @@ class RsyncSource(RsyncController):
         """
 
         if self.rsync_verbose:
-            outp = output.split("%s%s" % (os.linesep, os.linesep))
+            outp = output.split(f"{os.linesep}{os.linesep}")
             self.log.info('Verbose file list output is: %s', outp[0])
             del outp[0]
             output = os.linesep.join(outp)
@@ -378,7 +376,7 @@ class RsyncSource(RsyncController):
         Make an array of flags to be used
         """
         # Start rsync recursive or non recursive; archive mode (a) is equivalent to  -rlptgoD (see man rsync)
-        flags = ['--stats', '--numeric-ids', '-lptgoD', '--files-from=%s' % files]
+        flags = ['--stats', '--numeric-ids', '-lptgoD', f'--files-from={files}']
         if recursive:
             flags.append('-r')
         if self.rsync_delete:
@@ -401,7 +399,7 @@ class RsyncSource(RsyncController):
         if self.rsync_arbitopts:
             arbopts = []
             for arbopt in self.rsync_arbitopts:
-                opt = "--%s" % re.sub(':', '=', arbopt, 1)
+                opt = f"--{re.sub(':', '=', arbopt, 1)}"
                 arbopts.append(opt)
             self.log.warning('Adding unchecked flags %s', ' '.join(arbopts))
             flags.extend(arbopts)
@@ -418,8 +416,7 @@ class RsyncSource(RsyncController):
 
         self.log.info('%s is sending path %s to %s %s', self.whoami, path, host, port)
         self.log.debug('Used flags: "%s"', ' '.join(flags))
-        command = 'rsync %s %s/ rsync://%s:%s/%s' % (' '.join(flags), self.rsyncpath,
-                                                     host, port, self.module)
+        command = f"rsync {' '.join(flags)} {self.rsyncpath}/ rsync://{host}:{port}/{self.module}"
         code, output = RunAsyncLoopLog.run(command)
         os.remove(gfile)
         self.parse_output(output)
@@ -429,7 +426,7 @@ class RsyncSource(RsyncController):
         """ Test run with netcat """
         time.sleep(self.SLEEPTIME)
         flags = self.get_flags('nofile', 0)
-        command = 'echo %s is sending %s with flags "%s" | nc %s %s' % (self.whoami, path, ' '.join(flags), host, port)
+        command = f"echo {self.whoami} is sending {path} with flags \"{' '.join(flags)}\" | nc {host} {port}"
 
         return RunAsyncLoopLog.run(command)
 
@@ -439,19 +436,19 @@ class RsyncSource(RsyncController):
             self.log.raiseException('Empty path given!')
             return None
         elif not isinstance(path, str):
-            self.log.raiseException('Invalid path: %s !' % path)
+            self.log.raiseException(f'Invalid path: {path} !')
             return None
         else:
             code, output = self.attempt_run(path)
             if output:
                 self.output_queue.put(output.encode())
-            return (code == 0)
+            return code == 0
 
 
     def get_a_dest(self, attempts):
         """ Try to get a destination x times """
         attempt = 1
-        while (attempt <= attempts):
+        while attempt <= attempts:
             dest = self.try_a_dest(self.TIME_OUT)  # Keeps it if not consuming
             if dest:  # We locked a rsync daemon
                 self.log.debug('Got destination %s', dest)
@@ -502,7 +499,7 @@ class RsyncSource(RsyncController):
                 self.log.debug('recieved destination was paused')
                 return None
             else:
-                portmap = '%s/portmap/%s' % (self.session, whoami)
+                portmap = f'{self.session}/portmap/{whoami}'
                 lport, _ = self.get_znode(portmap)
                 if port != lport:
                     self.log.error('destination port not valid')  # Should not happen

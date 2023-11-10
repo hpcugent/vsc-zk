@@ -1,4 +1,3 @@
-# -*- coding: latin-1 -*-
 #
 # Copyright 2013-2023 Ghent University
 #
@@ -46,7 +45,7 @@ class RunDestination(RunWatchLoopLog):
 
     def __init__(self, cmd, **kwargs):
 
-        super(RunDestination, self).__init__(cmd, **kwargs)
+        super().__init__(cmd, **kwargs)
         self.registered = False
         self.paused = False
 
@@ -56,7 +55,7 @@ class RunDestination(RunWatchLoopLog):
         Register destination after 2 loops.
         When watch is ready, stop
         """
-        super(RunDestination, self)._loop_process_output(output)
+        super()._loop_process_output(output)
 
         if self.watchclient.verifypath and (self._loop_count % self.WAITLOOPS == 0):
             if self.watchclient.basepath_ok():
@@ -102,13 +101,13 @@ class RsyncDestination(RsyncController):
         host = socket.getfqdn()
         if domain:
             hname = host.split('.', 1)
-            host = '%s.%s' % (hname[0], domain)
+            host = f'{hname[0]}.{domain}'
         self.daemon_host = host
         self.daemon_port = rsyncport
         self.start_port = startport
         self.port = None
 
-        super(RsyncDestination, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def get_whoami(self, name=None):  # Override base method
         """Create a unique name for this client"""
@@ -141,25 +140,25 @@ class RsyncDestination(RsyncController):
 
     def reserve_port(self):
         """ Search for an available port """
-        portdir = '%s/usedports/%s' % (self.session, self.daemon_host)
+        portdir = f'{self.session}/usedports/{self.daemon_host}'
         self.ensure_path(self.znode_path(portdir))
         lock = self.Lock(self.znode_path(self.session + '/portlock'), self.whoami)
         with lock:
             if self.daemon_port:
                 port = self.daemon_port
-                portpath = '%s/%s' % (portdir, port)
+                portpath = f'{portdir}/{port}'
                 if self.exists_znode(portpath):
                     self.log.raiseException('Port already in use: %s', port)
 
             else:
                 port = self.start_port
-                portpath = '%s/%s' % (portdir, port)
-                while (self.exists_znode(portpath)):
+                portpath = f'{portdir}/{port}'
+                while self.exists_znode(portpath):
                     port += 1
-                    portpath = '%s/%s' % (portdir, port)
+                    portpath = f'{portdir}/{port}'
 
             self.make_znode(portpath, ephemeral=True)
-            portmap = '%s/portmap/%s' % (self.session, self.whoami)
+            portmap = f'{self.session}/portmap/{self.whoami}'
             if not self.exists_znode(portmap):
                 self.make_znode(portmap, ephemeral=True, makepath=True)
             self.set_znode(portmap, str(port))
@@ -228,7 +227,7 @@ class RsyncDestination(RsyncController):
 
     def add_to_queue(self):
         """Add this destination to the destination queue """
-        destid = '%d:%s' % (self.port, self.whoami)
+        destid = f'{int(self.port)}:{self.whoami}'
         self.dest_queue.put(destid.encode())
         self.log.info('Added destination %s to queue with port %s', self.whoami, self.port)
 

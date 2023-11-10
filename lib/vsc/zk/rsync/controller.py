@@ -1,4 +1,3 @@
-# -*- coding: latin-1 -*-
 #
 # Copyright 2013-2023 Ghent University
 #
@@ -63,16 +62,16 @@ class RsyncController(VscKazooClient):
         }
         self.netcat = netcat
 
-        super(RsyncController, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.rsyncpath = rsyncpath.rstrip(os.path.sep)
 
         if not netcat:
             if verifypath and not self.basepath_ok():
-                self.log.raiseException('Path does not exists in filesystem: %s' % rsyncpath)
+                self.log.raiseException(f'Path does not exists in filesystem: {rsyncpath}')
             if not os.path.isdir(self.RSDIR):
                 os.mkdir(self.RSDIR, 0o700)
-            self.module = 'zkrs-%s' % self.session
+            self.module = f'zkrs-{self.session}'
 
         self.dest_queue = LockingQueue(self, self.znode_path(self.session + '/destQueue'))
         self.verifypath = verifypath
@@ -90,10 +89,10 @@ class RsyncController(VscKazooClient):
 
     def dest_state(self, dest, state):
         """ Set the destination to a different state """
-        destdir = '%s/dests' % self.session
+        destdir = f'{self.session}/dests'
         self.ensure_path(self.znode_path(destdir))
         lock = self.Lock(self.znode_path(self.session + '/destslock'), dest)
-        destpath = '%s/%s' % (destdir, dest)
+        destpath = f'{destdir}/{dest}'
         with lock:
             if not self.exists_znode(destpath):
                 self.make_znode(destpath, ephemeral=True)
@@ -110,4 +109,3 @@ class RsyncController(VscKazooClient):
             else:
                 self.log.error('No valid state: %s ', state)
                 return None
-

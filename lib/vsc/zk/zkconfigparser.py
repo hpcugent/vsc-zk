@@ -1,4 +1,3 @@
-# -*- coding: latin-1 -*-
 #
 # Copyright 2013-2023 Ghent University
 #
@@ -70,7 +69,7 @@ def parse_zkconfig(configremainder):
             for k, v in configremainder[sect].items():
                 user[k] = v.split(',')
             if 'passwd' not in user:
-                logger.raiseException('User %s has no password attribute!' % sect)
+                logger.raiseException(f'User {sect} has no password attribute!')
 
     return znodes, users
 
@@ -89,7 +88,7 @@ def parse_acls(acls, users, root_acl):
 
         for acl_user in acl_users:
             if acl_user not in users:
-                logger.raiseException('User %s not configured!' % acl_user)
+                logger.raiseException(f'User {acl_user} not configured!')
             else:
                 tacl = make_digest_acl(acl_user, str(users[acl_user].get('passwd')), \
                     read=acl_r, write=acl_w, create=acl_c, delete=acl_d, admin=acl_a)

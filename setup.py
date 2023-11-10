@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: latin-1 -*-
 #
 # Copyright 2013-2013 Ghent University
 #
@@ -34,7 +33,7 @@ import vsc.install.shared_setup as shared_setup
 from vsc.install.shared_setup import kw, sdw
 
 PACKAGE = {
-    'version': '2.0.5',
+    'version': '2.0.6',
     'author': [sdw, kw],
     'maintainer': [sdw, kw],
     'install_requires': [

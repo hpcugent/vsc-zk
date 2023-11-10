@@ -49,7 +49,7 @@ class ConfigParserTest(TestCase):
                              'root': {'passwd': 'admin', 'path': '/'}}
 
         self.rootacl = make_digest_acl('root', 'admin', all=True)
-        super(ConfigParserTest, self).setUp()
+        super().setUp()
 
     def test_rootinfo(self):
         """Checks if root info got parsed correctly"""

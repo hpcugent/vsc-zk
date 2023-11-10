@@ -29,8 +29,9 @@ Unit tests for VscKazooClient and childs
 @author: Kenneth Waegeman (Ghent University)
 """
 import sys
-import time
 import mock
+
+from pathlib import Path
 
 from kazoo.client import KazooClient
 from kazoo.recipe.party import Party
@@ -72,7 +73,8 @@ class zkClientTest(TestCase):
         # Valid Rsyncdepth check failed test
         self.assertRaises(Exception, RsyncSource, 'dummy', netcat=True, rsyncpath='/netcattext')
         # The next 2 should be valid
-        self.assertTrue(isinstance(RsyncSource('dummy', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2), RsyncSource))
+        self.assertTrue(isinstance(RsyncSource('dummy', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2),
+                                   RsyncSource))
         self.assertTrue(isinstance(RsyncSource('dummy', rsyncpath='/tmp', rsyncdepth=5), RsyncSource))
         # Controller main class and module/session check
         zkclient = RsyncController('dummy', rsyncpath='/tmp')
@@ -88,7 +90,7 @@ class zkClientTest(TestCase):
         """ Test the generation of the config file"""
         zkclient = RsyncSource('dummy', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
         filen = zkclient.generate_file('/path/dummy/some/path')
-        filec = open(filen, "r").read()
+        filec = Path(filen).read_text(encoding='utf8')
         self.assertEqual(filec, 'some/path/')
         self.assertRaises(Exception, zkclient.generate_file, '/path/wrong/path')
 
@@ -97,33 +99,33 @@ class zkClientTest(TestCase):
         res = "[zkrs-new]\npath = /tmp\nread only = no\nuid = root\ngid = root\n\n"
         zkclient = RsyncDestination('dummy', rsyncpath='/tmp', session='new')
         filen = zkclient.generate_daemon_config()
-        filec = open(filen, "r").read()
+        filec = Path(filen).read_text(encoding='utf8')
         self.assertEqual(filec, res)
 
     def test_activate_and_pausing_dests(self):
         """ Test the pausing , disabling and activation of destinations """
         zkclient = RsyncDestination('dummy', rsyncpath='/tmp', session='new')
         zkclient.pause()
-        val, dum = zkclient.getstr('/admin/rsync/new/dests/test')
+        val, _ = zkclient.getstr('/admin/rsync/new/dests/test')
         self.assertEqual(val, '')
         zkclient.activate()
-        val, dum = zkclient.getstr('/admin/rsync/new/dests/test')
+        val, _ = zkclient.getstr('/admin/rsync/new/dests/test')
         self.assertEqual(val, 'active')
         zkclient.pause()
-        val, dum = zkclient.getstr('/admin/rsync/new/dests/test')
+        val, _ = zkclient.getstr('/admin/rsync/new/dests/test')
         self.assertEqual(val, 'paused')
 
         zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2)
         self.assertFalse(zkclient.dest_is_sane('test'))
-        val, dum = zkclient.getstr('/admin/rsync/new/dests/test')
+        val, _ = zkclient.getstr('/admin/rsync/new/dests/test')
         self.assertEqual(val, '')
         zkclient.setstr('/admin/rsync/new/dests/test', 'active')
         self.assertTrue(zkclient.dest_is_sane('test'))
-        val, dum = zkclient.getstr('/admin/rsync/new/dests/test')
+        val, _ = zkclient.getstr('/admin/rsync/new/dests/test')
         self.assertEqual(val, 'active')
         zkclient.setstr('/admin/rsync/new/dests/test', 'paused')
         self.assertFalse(zkclient.dest_is_sane('test'))
-        val, dum = zkclient.getstr('/admin/rsync/new/dests/test')
+        val, _ = zkclient.getstr('/admin/rsync/new/dests/test')
         self.assertEqual(val, 'disabled')
 
     def test_wirte_donefile(self):
@@ -134,10 +136,11 @@ class zkClientTest(TestCase):
             'failed' : 5,
             'unfinished' : 0
         }
-        zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy', rsyncdepth=2, done_file=donefile)
+        zkclient = RsyncSource('dummy', session='new', netcat=True, rsyncpath='/path/dummy',
+                               rsyncdepth=2, done_file=donefile)
         zkclient.write_donefile(values)
         cache_file = FileCache(donefile)
-        (timestamp, stats) = cache_file.load('stats')
+        (_, stats) = cache_file.load('stats')
         self.assertEqual(values, stats)
 
 
