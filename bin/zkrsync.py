@@ -60,7 +60,7 @@ class ZkrsDaemon(Daemon):
         start_zkrs(self.zkrs_type, self.zkrs_options, self.zkrs_kwargs)
 
 
-def init_logging(logfile, session, rstype):
+def init_logging(logfile, session, rstype, max_bytes, backup_count):
     """Initiates the logfile"""
     logfile = logfile % {
         'session': session,
@@ -73,7 +73,7 @@ def init_logging(logfile, session, rstype):
             os.makedirs(logdir)
         os.chmod(logdir, stat.S_IRWXU)
 
-    fancylogger.logToFile(logfile)
+    fancylogger.logToFile(logfile, max_bytes=max_bytes, backup_count=backup_count)
     logger.info('Logging to file %s:', logfile)
 
 def init_pidfile(pidfile, session, rstype):
@@ -254,6 +254,8 @@ def main():
         'dropcache'   : ('run rsync with --drop-cache', None, 'store_true', False),
         'logfile'     : ('Output to logfile', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.log'),
         'pidfile'     : ('Pidfile template', None, 'store', '/tmp/zkrsync/%(session)s-%(rstype)s-%(pid)s.pid'),
+        'max_bytes'   : ('logfile size', None, 'store', 1024 * 1024 * 100),
+        'backup_count': ('logfile backups', None, 'store', 5),
         'timeout'     : ('run rsync with --timeout TIMEOUT', "int", 'store', 0),
         'verbose'     : ('run rsync with --verbose', None, 'store_true', False),
         # Individual Destination client specific options
@@ -269,7 +271,7 @@ def main():
     go = simple_option(options)
     acreds, admin_acl, rstype = zkrsync_parse(go.options)
     if go.options.logfile:
-        init_logging(go.options.logfile, go.options.session, rstype)
+        init_logging(go.options.logfile, go.options.session, rstype, go.options.max_bytes, go.options.backup_count)
 
     kwargs = {
         'session'     : go.options.session,
